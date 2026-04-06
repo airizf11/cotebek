@@ -1,0 +1,112 @@
+### New App
+POST http://localhost:3000/cteapi/v1/apps
+Content-Type: application/json
+
+{
+  "name": "GOORIIs Store"
+}
+
+### Tes Transaksi In
+POST http://localhost:3000/cteapi/v1/transactions
+Content-Type: application/json
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+
+{
+  "type": "IN",
+  "category": "SALES",
+  "amount": "1000",
+  "paymentMethod": "CASH",
+  "description": "Tes transaksi 1."
+}
+
+### Transaksi Out
+POST http://localhost:3000/cteapi/v1/transactions
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+Content-Type: application/json
+
+{
+  "type": "OUT",
+  "category": "EXPENSE",
+  "amount": "15000",
+  "paymentMethod": "CASH",
+  "description": "Tes Keluar Uang 1."
+}
+
+### Tes Order
+POST http://localhost:3000/cteapi/v1/orders
+Content-Type: application/json
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+
+{
+  "orderNumber": "ORD-TES-001",
+  "totalAmount": 10000,
+  "totalCogs": 1000,
+  "paymentMethod": "CASH",
+  "metadata": {
+    "customer": "Rizky",
+    "discord_id": "12312345"
+  },
+  "items":[
+    {
+      "itemName": "Tes Item 1",
+      "qty": 1,
+      "price": 10000,
+      "cogs": 1100,
+      "subtotal": 10000,
+      "metadata": { "game_id": "1234567 (1000)" }
+    },
+    {
+      "itemName": "Tes Fee",
+      "qty": 1,
+      "price": 15000,
+      "cogs": 5000,
+      "subtotal": 15000
+    }
+  ]
+}
+
+### Tes All RReport 
+GET http://localhost:3000/cteapi/v1/reports/summary
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+
+### Tes Tren Sales
+GET http://localhost:3000/cteapi/v1/reports/sales-trend?startDate=2026-03-01&endDate=2026-03-31
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+
+###
+
+###
+
+### View MUTASI KAS
+GET http://localhost:3000/cteapi/v1/transactions
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+
+### New MENU
+POST http://localhost:3000/cteapi/v1/items
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+Content-Type: application/json
+
+{
+  "name": "Tes Item 1",
+  "sku": "TES-001",
+  "price": 10000,
+  "cogs": 1000,
+  "category": "Showcase"
+}
+
+### View MENU
+GET http://localhost:3000/cteapi/v1/items
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+
+### 3. UPD HARGA MENU (by ID Item)
+PUT http://localhost:3000/cteapi/v1/items/id
+x-api-key: app_bb7c9b319f31397f493074e5fad15151
+Content-Type: application/json
+
+{
+  "price": 20000
+}
+
+### 4. HAPUS MENU (SOFT DELETE)
+DELETE http://localhost:3000/cteapi/v1/items/id
+x-api-key: app_bb7c9b319f31397f493074e5fad15151

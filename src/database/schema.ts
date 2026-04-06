@@ -1,0 +1,192 @@
+// cotebek/src/database/schema.ts
+import { 
+  pgTable, 
+  uuid, 
+  varchar, 
+  timestamp, 
+  jsonb, 
+  decimal, 
+  boolean, 
+  pgEnum, 
+  integer,
+  primaryKey,
+  text
+} from 'drizzle-orm/pg-core';
+// import { v4 as uuidv4 } from 'uuid';
+import type { AdapterAccount } from "next-auth/adapters"
+
+export const transactionTypeEnum = pgEnum('transaction_type', ['IN', 'OUT']);
+export const txCategoryEnum = pgEnum('transaction_category',['SALES', 'EXPENSE', 'FUND_IN', 'FUND_OUT', 'OTHER']);
+export const appRoleEnum = pgEnum('user_role', ['DEV', 'OWNER', 'ADMIN', 'STAFF', 'USER']);
+export const joinStatusEnum = pgEnum('join_status',['PENDING', 'ACTIVE', 'REJECTED']);
+
+export const users = pgTable("user", {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text("name"),
+  email: text("email").notNull(),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
+  image: text("image"),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+  .defaultNow()
+  .$onUpdate(() => new Date()),
+});
+
+export const accounts = pgTable(
+  "account",
+  {
+    userId: uuid("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").$type<AdapterAccount["type"]>().notNull(),
+    provider: text("provider").notNull(),
+    providerAccountId: text("providerAccountId").notNull(),
+    refresh_token: text("refresh_token"),
+    access_token: text("access_token"),
+    expires_at: integer("expires_at"),
+    token_type: text("token_type"),
+    scope: text("scope"),
+    id_token: text("id_token"),
+    session_state: text("session_state"),
+  },
+  (account) => ({
+    compoundKey: primaryKey({
+      columns: [account.provider, account.providerAccountId],
+    }),
+  })
+)
+
+export const sessions = pgTable("session", {
+  sessionToken: text("sessionToken").primaryKey(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+})
+
+export const verificationTokens = pgTable(
+  "verificationToken",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+  },
+  (vt) => ({
+    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
+  })
+)
+
+/*
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  username: varchar('username', { length: 50 }).notNull().unique(),
+  displayName: varchar('display_name', { length: 255 }),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  emailVerified: timestamp('email_verified', { mode: 'date' }),
+  image: varchar('image', { length: 255 }),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+  .defaultNow()
+  .$onUpdate(() => new Date()),
+});
+
+export const accounts = pgTable('accounts', {
+    userId: uuid('userId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 255 }).notNull(),
+    provider: varchar('provider', { length: 255 }).notNull(),
+    providerAccountId: varchar('providerAccountId', { length: 255 }).notNull(),
+    refresh_token: varchar('refresh_token', { length: 255 }),
+    access_token: varchar('access_token', { length: 255 }),
+    expires_at: integer('expires_at'),
+    token_type: varchar('token_type', { length: 255 }),
+    scope: varchar('scope', { length: 255 }),
+    id_token: varchar('id_token', { length: 2048 }),
+    session_state: varchar('session_state', { length: 255 }),
+  },
+  (account) => ({
+    // Satu provider (misal google) dan ID account-nya jadi Primary Key gabungan
+    compoundKey: primaryKey({ columns: [account.provider, account.providerAccountId] }),
+  })
+); */
+
+export const apps = pgTable('apps', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  apiKey: varchar('api_key', { length: 255 }).notNull().unique(),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+  .defaultNow()
+  .$onUpdate(() => new Date()),
+});
+
+export const userApps = pgTable('user_apps', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  appId: uuid('app_id').references(() => apps.id).notNull(),
+  role: appRoleEnum('role').default('USER').notNull(), 
+  status: joinStatusEnum('status').default('PENDING').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+  .defaultNow()
+  .$onUpdate(() => new Date()),
+});
+
+export const transactions = pgTable('transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id').references(() => apps.id).notNull(),
+  type: transactionTypeEnum('type').notNull(),
+  category: txCategoryEnum('category').notNull(),
+  amount: decimal('amount', { precision: 15, scale: 2 }).notNull(),
+  paymentMethod: varchar('payment_method', { length: 100 }),
+  description: varchar('description', { length: 255 }),
+  referenceId: uuid('reference_id'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export const orders = pgTable('orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id').references(() => apps.id).notNull(),
+  orderNumber: varchar('order_number', { length: 100 }).notNull(),
+  totalAmount: decimal('total_amount', { precision: 15, scale: 2 }).notNull(),
+  totalCogs: decimal('total_cogs', { precision: 15, scale: 2 }).default('0'),
+  paymentMethod: varchar('payment_method', { length: 100 }),
+  status: varchar('status', { length: 100 }).default('PAID'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+  .defaultNow()
+  .$onUpdate(() => new Date()),
+});
+
+export const orderItems = pgTable('order_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  orderId: uuid('order_id').references(() => orders.id).notNull(),
+  itemId: uuid('item_id').references(() => items.id),
+  itemName: text('item_name').notNull(),
+  qty: decimal('qty', { precision: 10, scale: 2 }).notNull(),
+  price: decimal('price', { precision: 15, scale: 2 }).notNull(),
+  cogs: decimal('cogs', { precision: 15, scale: 2 }).default('0'),
+  subtotal: decimal('subtotal', { precision: 15, scale: 2 }).notNull(),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+  .defaultNow()
+});
+
+export const items = pgTable('items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id').references(() => apps.id, { onDelete: 'cascade' }).notNull(),
+  name: text('name').notNull(),
+  sku: text('sku'),
+  price: decimal('price', { precision: 15, scale: 2 }).notNull(),
+  cogs: decimal('cogs', { precision: 15, scale: 2 }).default('0'),
+  category: text('category'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+  .defaultNow()
+  .$onUpdate(() => new Date()),
+});
