@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // payload ini berisi data yang disimpan di dalam JWT (misal: ID User & Email)
     // Data yang di-return di sini otomatis ditempelkan ke 'request.user'
     return { 
-      userId: payload.sub, 
+      id: payload.sub, 
       email: payload.email, 
       role: payload.role 
     };

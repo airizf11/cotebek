@@ -4,14 +4,17 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
+import { AuditService } from 'src/common/services/audit.service';
+import { AUDIT_ACTIONS } from 'src/common/constants/app-roles.constant';
 
 @Injectable()
 export class OrdersService {
   constructor(
     @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
+    private auditService: AuditService,
   ) {}
 
-  async create(appId: string, dto: CreateOrderDto) {
+  async create(appId: string, dto: CreateOrderDto, handledBy?: string | null, ipAddress?: string | null) {
     try {
       // Mulai Database Transaction (tx)
       // Kalau salah satu gagal, semuanya otomatis di-Cancel (Rollback)
@@ -20,6 +23,7 @@ export class OrdersService {
         // 1. BUAT STRUK INDUK (Insert ke table orders)
         const newOrder = await tx.insert(schema.orders).values({
           appId: appId,
+          handledBy: handledBy ?? null,
           orderNumber: dto.orderNumber,
           totalAmount: dto.totalAmount.toString(), // Drizzle butuh string untuk tipe Decimal
           totalCogs: dto.totalCogs.toString(),
@@ -57,14 +61,25 @@ export class OrdersService {
         return newOrder[0];
       });
 
+      // ✅ Log audit AFTER transaction commit
+      await this.auditService.log({
+        appId,
+        userId: handledBy ?? null,
+        action: AUDIT_ACTIONS.CREATE_ORDER,
+        entity: 'orders',
+        entityId: result.id,
+        after: { orderNumber: dto.orderNumber, totalAmount: dto.totalAmount },
+        ipAddress: ipAddress ?? null,
+      });
+
       return {
-        message: 'Order berhasil dicatat dan Buku Kas otomatis diupdate!',
+        message: 'Order successfully recorded.',
         data: result,
       };
 
     } catch (error) {
-      console.error('Transaksi Gagal, Rollback dilakukan:', error);
-      throw new InternalServerErrorException('Gagal memproses order');
+      console.error('Transaction failed, rollback executed:', error);
+      throw new InternalServerErrorException('Failed to process order.');
     }
   }
 }

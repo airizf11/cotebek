@@ -1,0 +1,35 @@
+// cotebek/src/common/constants/app-roles.constant.ts
+export const APP_ROLES = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  STAFF: 'STAFF',
+  USER: 'USER',
+  DEV: 'DEV',
+} as const;
+
+export const JOIN_STATUS = {
+  PENDING: 'PENDING',
+  ACTIVE: 'ACTIVE',
+  REJECTED: 'REJECTED',
+} as const;
+
+export const AUDIT_ACTIONS = {
+  // Orders
+  CREATE_ORDER: 'CREATE_ORDER',
+  // Items
+  CREATE_ITEM: 'CREATE_ITEM',
+  UPDATE_ITEM: 'UPDATE_ITEM',
+  DELETE_ITEM: 'DELETE_ITEM',
+  // Apps & Members
+  CREATE_APP: 'CREATE_APP',
+  REQUEST_JOIN: 'REQUEST_JOIN',
+  APPROVE_MEMBER: 'APPROVE_MEMBER',
+  REMOVE_MEMBER: 'REMOVE_MEMBER',
+  // Transactions
+  CREATE_TRANSACTION: 'CREATE_TRANSACTION',
+} as const;
+
+// Type helpers — bisa dipakai di service/guard lain
+export type AppRole = typeof APP_ROLES[keyof typeof APP_ROLES];
+export type JoinStatus = typeof JOIN_STATUS[keyof typeof JOIN_STATUS];
+export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];

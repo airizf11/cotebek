@@ -12,7 +12,7 @@ export class UsersController {
   @Get('me/apps')
   getMyApps(@Req() request: any) {
     // request.user.id ini otomatis diisi oleh SessionGuard di atas!
-    const userId = request.user.userId;
+    const userId = request.user.id;
     return this.usersService.getMyApps(userId);
   }
 }

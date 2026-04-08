@@ -1,5 +1,5 @@
 // cotebek/src/items/items.service.ts
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { DRIZZLE } from '../database/database.module';
@@ -57,18 +57,28 @@ export class ItemsService {
 
     if (!item[0]) throw new NotFoundException('Barang tidak ditemukan');
 
-    return { ...item[0], price: Number(item[0].price), cogs: Number(item[0].cogs) };
+    return {
+    message: 'Detail barang berhasil ditarik',  // ✅ consistent response shape
+    data: {
+      ...item[0],
+      price: Number(item[0].price),
+      cogs: Number(item[0].cogs),}, };
   }
 
   // 4. UPDATE DATA BARANG
   async update(appId: string, id: string, dto: UpdateItemDto) {
     // Siapkan objek update (hanya update yang dikirim saja)
-    const updateData: any = {};
-    if (dto.name) updateData.name = dto.name;
-    if (dto.sku) updateData.sku = dto.sku;
-    if (dto.price) updateData.price = dto.price.toString();
+    const updateData: Record<string, unknown> = {};
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.sku !== undefined) updateData.sku = dto.sku;
+    if (dto.price !== undefined) updateData.price = dto.price.toString();
     if (dto.cogs !== undefined) updateData.cogs = dto.cogs.toString();
-    if (dto.category) updateData.category = dto.category;
+    if (dto.category !== undefined) updateData.category = dto.category;
+
+    // Guard: reject empty update payload
+  if (Object.keys(updateData).length === 0) {
+    throw new BadRequestException('Tidak ada field yang diupdate');
+  }
 
     const updatedItem = await this.db.update(schema.items)
       .set(updateData)
@@ -77,7 +87,10 @@ export class ItemsService {
 
     if (!updatedItem[0]) throw new NotFoundException('Barang tidak ditemukan untuk diupdate');
 
-    return { message: 'Menu berhasil diupdate', data: updatedItem[0] };
+    return { message: 'Menu berhasil diupdate', data: updatedItem[0],
+      price: Number(updatedItem[0].price), // ✅ consistent number conversion
+      cogs: Number(updatedItem[0].cogs),
+     };
   }
 
   // 5. HAPUS BARANG (SOFT DELETE)

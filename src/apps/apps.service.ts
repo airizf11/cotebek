@@ -6,6 +6,7 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import * as crypto from 'crypto';
 import { eq, and } from 'drizzle-orm';
+import { APP_ROLES, JOIN_STATUS } from 'src/common/constants/app-roles.constant';
 
 @Injectable()
 export class AppsService {
@@ -29,8 +30,8 @@ export class AppsService {
       await tx.insert(schema.userApps).values({
         userId: userId,
         appId: appId,
-        role: 'OWNER',
-        status: 'ACTIVE',
+        role: APP_ROLES.OWNER,
+        status: JOIN_STATUS.ACTIVE,
       });
 
       return newApp[0];
@@ -57,8 +58,8 @@ export class AppsService {
     await this.db.insert(schema.userApps).values({
       userId: userId,
       appId: appId,
-      role: 'STAFF',
-      status: 'PENDING',
+      role: APP_ROLES.STAFF,
+      status: JOIN_STATUS.PENDING,
     });
 
     return { message: 'Permintaan gabung terkirim! Menunggu persetujuan Owner.' };
@@ -89,13 +90,35 @@ export class AppsService {
     await this.verifyOwner(ownerId, appId);
 
     const updated = await this.db.update(schema.userApps)
-      .set({ status: 'ACTIVE' })
-      .where(and(eq(schema.userApps.appId, appId), eq(schema.userApps.userId, targetUserId), eq(schema.userApps.status, 'PENDING')))
+      .set({ status: JOIN_STATUS.ACTIVE })
+      .where(and(eq(schema.userApps.appId, appId), eq(schema.userApps.userId, targetUserId), eq(schema.userApps.status, JOIN_STATUS.PENDING),))
       .returning();
 
     if (!updated[0]) throw new NotFoundException('Karyawan tidak ditemukan atau statusnya bukan PENDING');
 
     return { message: 'Karyawan berhasil disetujui untuk mulai bekerja!' };
+  }
+
+  async removeMember(ownerId: string, appId: string, targetUserId: string) { // ✅ new method
+    await this.verifyOwner(ownerId, appId);
+
+    // Owner tidak bisa remove dirinya sendiri
+    if (ownerId === targetUserId) {
+      throw new BadRequestException('Owner tidak bisa menghapus dirinya sendiri dari usaha.');
+    }
+
+    const deleted = await this.db
+      .update(schema.userApps)
+      .set({ status: JOIN_STATUS.REJECTED })
+      .where(and(
+        eq(schema.userApps.appId, appId),
+        eq(schema.userApps.userId, targetUserId),
+      ))
+      .returning();
+
+    if (!deleted[0]) throw new NotFoundException('Karyawan tidak ditemukan di usaha ini');
+
+    return { message: 'Karyawan berhasil dikeluarkan dari usaha.' };
   }
 
   // --- Fungsi Bantuan untuk Cek Keamanan ---

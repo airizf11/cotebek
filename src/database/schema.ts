@@ -19,6 +19,21 @@ export const transactionTypeEnum = pgEnum('transaction_type', ['IN', 'OUT']);
 export const txCategoryEnum = pgEnum('transaction_category',['SALES', 'EXPENSE', 'FUND_IN', 'FUND_OUT', 'OTHER']);
 export const appRoleEnum = pgEnum('user_role', ['DEV', 'OWNER', 'ADMIN', 'STAFF', 'USER']);
 export const joinStatusEnum = pgEnum('join_status',['PENDING', 'ACTIVE', 'REJECTED']);
+export const auditActionEnum = pgEnum('audit_action', [
+  // Orders
+  'CREATE_ORDER',
+  // Items
+  'CREATE_ITEM',
+  'UPDATE_ITEM',
+  'DELETE_ITEM',
+  // Apps & Members
+  'CREATE_APP',
+  'REQUEST_JOIN',
+  'APPROVE_MEMBER',
+  'REMOVE_MEMBER',
+  // Transactions
+  'CREATE_TRANSACTION',
+]);
 
 export const users = pgTable("user", {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -150,6 +165,7 @@ export const transactions = pgTable('transactions', {
 export const orders = pgTable('orders', {
   id: uuid('id').primaryKey().defaultRandom(),
   appId: uuid('app_id').references(() => apps.id).notNull(),
+  handledBy: uuid('handled_by').references(() => users.id),
   orderNumber: varchar('order_number', { length: 100 }).notNull(),
   totalAmount: decimal('total_amount', { precision: 15, scale: 2 }).notNull(),
   totalCogs: decimal('total_cogs', { precision: 15, scale: 2 }).default('0'),
@@ -189,4 +205,17 @@ export const items = pgTable('items', {
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
   .defaultNow()
   .$onUpdate(() => new Date()),
+});
+
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id').references(() => apps.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id),   // nullable — ApiKey-only request tidak ada userId
+  action: auditActionEnum('action').notNull(),
+  entity: varchar('entity', { length: 100 }).notNull(), // 'orders' | 'items' | 'userApps' | ...
+  entityId: uuid('entity_id'),                          // id row yang terpengaruh
+  before: jsonb('before'),                              // state sebelum (update/delete)
+  after: jsonb('after'),                                // state sesudah
+  ipAddress: varchar('ip_address', { length: 45 }),     // IPv4 max 15, IPv6 max 45
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 });

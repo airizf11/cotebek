@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { ApiKeyGuard } from './api-key/api-key.guard';
 import * as dotenv from 'dotenv';
+import { DualAuthGuard } from './dual-auth/dual-auth.guard';
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ dotenv.config();
       signOptions: { expiresIn: '1d' }, // Token berlaku 1 hari
     }),
   ],
-  providers: [JwtStrategy, ApiKeyGuard],
-  exports: [JwtModule, ApiKeyGuard], // Export biar bisa dipakai di tempat lain
+  providers: [JwtStrategy, ApiKeyGuard, DualAuthGuard],
+  exports: [JwtModule, ApiKeyGuard, DualAuthGuard], // Export biar bisa dipakai di tempat lain
 })
 export class AuthModule {}

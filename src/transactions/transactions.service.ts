@@ -1,6 +1,6 @@
 // cotebek/src/transactions/transactions.service.ts
 import { Inject, Injectable } from '@nestjs/common';
-// import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
@@ -12,14 +12,14 @@ export class TransactionsService {
     @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
   ) {}
 
-  async create(appId: string, dto: any) { // Sementara pakai any dulu biar cepet tesnya
+  async create(appId: string, dto: CreateTransactionDto) {
     
     // Insert data ke tabel transaksi ledger
     const newTx = await this.db.insert(schema.transactions).values({
       appId: appId, // ID usahanya otomatis dari API Key! Gak bisa dipalsukan.
       type: dto.type,
       category: dto.category, // 'SALES', 'EXPENSE', dll
-      amount: dto.amount,
+      amount: dto.amount.toString(),
       paymentMethod: dto.paymentMethod,
       description: dto.description,
       metadata: dto.metadata, // Catatan JSON bebas
@@ -28,6 +28,7 @@ export class TransactionsService {
     return {
       message: 'Transaksi berhasil dicatat ke Ledger!',
       data: newTx[0],
+      amount: dto.amount.toString(),
     };
   }
 

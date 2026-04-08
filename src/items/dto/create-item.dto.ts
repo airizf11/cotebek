@@ -1,8 +1,28 @@
 // cotebek/src/items/dto/create-item.dto.ts
+import { IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from "class-validator";
+
 export class CreateItemDto {
-  name: string;        // Wajib (ex: 'Kopi Susu Aren')
-  sku?: string;        // Opsional (Kode barang, ex: 'KSA-01')
-  price: number;       // Wajib (Harga jual)
-  cogs?: number;       // Opsional (Modal / HPP)
-  category?: string;   // Opsional (Kategori, ex: 'Minuman')
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  sku?: string;
+
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  cogs?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  category?: string;
 }

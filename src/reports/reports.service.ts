@@ -138,11 +138,11 @@ export class ReportsService {
   async getPaymentMethods(appId: string, startDate?: string, endDate?: string) {
     const filters =[eq(schema.transactions.appId, appId)];
 
-    if (startDate) filters.push(gte(schema.orders.createdAt, new Date(startDate)));
+    if (startDate) filters.push(gte(schema.transactions.createdAt, new Date(startDate)));
     if (endDate) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-      filters.push(lte(schema.orders.createdAt, end));
+      filters.push(lte(schema.transactions.createdAt, end));
     }
 
     // Tarik dan kelompokkan berdasarkan kolom paymentMethod

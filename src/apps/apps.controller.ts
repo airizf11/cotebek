@@ -1,5 +1,5 @@
 // cotebek/src/apps/apps.controller.ts
-import { Controller, Get, Post, Body, UseGuards, Req, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Param, Put, Delete } from '@nestjs/common';
 import { AppsService } from './apps.service';
 import { CreateAppDto } from './dto/create-app.dto';
 import { SessionGuard } from '../auth/session.guard';
@@ -44,4 +44,16 @@ export class AppsController {
     const ownerId = request.user.id;
     return this.appsService.approveMember(ownerId, appId, targetUserId);
   }
+
+  // -— tambah DELETE
+@Delete(':appId/members/:targetUserId') // ✅ new endpoint
+@UseGuards(JwtAuthGuard)
+removeMember(
+  @Req() request: any,
+  @Param('appId') appId: string,
+  @Param('targetUserId') targetUserId: string,
+) {
+  const ownerId = request.user.id;
+  return this.appsService.removeMember(ownerId, appId, targetUserId);
+}
 }
