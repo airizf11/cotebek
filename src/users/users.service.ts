@@ -23,7 +23,7 @@ export class UsersService {
       .where(eq(schema.userApps.userId, userId));
 
     return {
-      message: 'Daftar akses usaha berhasil ditarik',
+      message: 'App access list successfully retrieved.',
       data: myApps,
     };
   }

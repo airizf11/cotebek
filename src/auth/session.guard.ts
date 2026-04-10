@@ -15,7 +15,7 @@ export class SessionGuard implements CanActivate {
     console.log("🛡️ [DEBUG NESTJS] Auth Header masuk:", authHeader);
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Login dibutuhkan! (Token tidak ditemukan)');
+      throw new UnauthorizedException('Authentication required. Token not found.');
     }
 
     // Ambil tokennya (misal: "Bearer abc-123" -> ambil "abc-123")
@@ -36,7 +36,7 @@ export class SessionGuard implements CanActivate {
       .limit(1);
 
     if (!activeSession[0]) {
-      throw new UnauthorizedException('Sesi telah berakhir atau token tidak valid. Silakan login ulang.');
+      throw new UnauthorizedException('Session expired or invalid token. Please log in again.');
     }
 
     // Kalau lolos, tempelkan data user ke request biar bisa dibaca di Controller!

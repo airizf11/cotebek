@@ -1,4 +1,4 @@
-// 
+// cotebek/src/auth/api-key/api-key.guard.ts
 import { 
   CanActivate, 
   ExecutionContext, 
@@ -25,7 +25,7 @@ export class ApiKeyGuard implements CanActivate {
     const apiKey = request.headers['x-api-key'];
 
     if (!apiKey) {
-      throw new UnauthorizedException('Ditolak! API Key tidak ditemukan di header.');
+      throw new UnauthorizedException('Rejected. API Key not found in headers.');
     }
 
     // 3. Cari di database, ada gak apiKey ini?
@@ -39,7 +39,7 @@ export class ApiKeyGuard implements CanActivate {
 
     // 4. Kalau gak ketemu atau statusnya non-aktif, tolak!
     if (!app || !app.isActive) {
-      throw new UnauthorizedException('Ditolak! API Key tidak valid atau usaha sedang non-aktif.');
+      throw new UnauthorizedException('Rejected. Invalid API Key or app is inactive.');
     }
 
     // 5. INI MAGISNYA: Kalau lolos, kita tempelkan data usahanya ke objek request

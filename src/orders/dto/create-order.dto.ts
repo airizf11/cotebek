@@ -1,5 +1,5 @@
 // cotebek/src/orders/dto/create-order.dto.ts
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, MaxLength } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, MaxLength, IsUUID, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class OrderItemDto {
@@ -32,6 +32,10 @@ class OrderItemDto {
 }
 
 export class CreateOrderDto {
+  @IsOptional()
+  @IsUUID()
+  customerId?: string;
+  
   @IsString()
   @MaxLength(100)
   orderNumber: string;
@@ -47,6 +51,10 @@ export class CreateOrderDto {
   @IsString()
   @MaxLength(100)
   paymentMethod: string;
+
+  @IsOptional()
+  @IsDateString()
+  dueDate?: string;                  // ✅ new — ISO string, optional karena bisa auto-calc
 
   @IsOptional()
   metadata?: any;

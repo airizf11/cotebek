@@ -1,0 +1,20 @@
+# 1. Login (via NextAuth atau apapun auth provider-mu)
+#    → dapat JWT token
+
+# 2. Create App — expect: { success: true, data: { id, name, apiKey } }
+POST /cteapi/v1/apps
+Authorization: Bearer <jwt>
+Body: { "name": "Warung Test" }
+
+# 3. Get my apps — expect: list app + role OWNER
+GET /cteapi/v1/users/me/apps
+Authorization: Bearer <jwt>
+
+# 4. Request join app lain — expect: status PENDING
+POST /cteapi/v1/apps/join
+Authorization: Bearer <jwt>
+Body: { "apiKey": "app_xxx" }
+
+# 5. Approve member — expect: status ACTIVE
+PUT /cteapi/v1/apps/:appId/members/:userId/approve
+Authorization: Bearer <jwt>

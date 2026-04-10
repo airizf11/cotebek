@@ -15,6 +15,20 @@
       "when": 1775556453335,
       "tag": "0001_furry_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775724090111,
+      "tag": "0002_lumpy_molecule_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775739405733,
+      "tag": "0003_green_microbe",
+      "breakpoints": true
     }
   ]
 }

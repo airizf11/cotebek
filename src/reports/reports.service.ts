@@ -178,4 +178,73 @@ export class ReportsService {
       data: formattedResult,
     };
   }
-}
+
+  async getOverview(appId: string) {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+
+  const [
+    ordersToday,
+    revenueToday,
+    activeOrders,
+    totalOrders,
+    totalRevenue,
+    totalCustomers,
+  ] = await Promise.all([
+    this.db
+      .select({ count: count() })
+      .from(schema.orders)
+      .where(and(
+        eq(schema.orders.appId, appId),
+        gte(schema.orders.createdAt, startOfToday),
+        lte(schema.orders.createdAt, endOfToday),
+      )),
+
+    this.db
+      .select({ total: sum(schema.orders.totalAmount) })
+      .from(schema.orders)
+      .where(and(
+        eq(schema.orders.appId, appId),
+        gte(schema.orders.createdAt, startOfToday),
+        lte(schema.orders.createdAt, endOfToday),
+      )),
+
+    this.db
+      .select({ count: count() })
+      .from(schema.orders)
+      .where(and(
+        eq(schema.orders.appId, appId),
+        sql`${schema.orders.status} != 'DONE'`,
+      )),
+
+    this.db
+      .select({ count: count() })
+      .from(schema.orders)
+      .where(eq(schema.orders.appId, appId)),
+
+    this.db
+      .select({ total: sum(schema.orders.totalAmount) })
+      .from(schema.orders)
+      .where(eq(schema.orders.appId, appId)),
+
+    this.db
+      .select({ count: count() })
+      .from(schema.customers)
+      .where(eq(schema.customers.appId, appId)),
+  ]);
+
+  return {
+    message: 'Overview report successfully retrieved.',
+    data: {
+      ordersToday:    ordersToday[0]?.count   ?? 0,
+      revenueToday:   Number(revenueToday[0]?.total  ?? 0),
+      activeOrders:   activeOrders[0]?.count  ?? 0,
+      totalOrders:    totalOrders[0]?.count   ?? 0,
+      totalRevenue:   Number(totalRevenue[0]?.total  ?? 0),
+      totalCustomers: totalCustomers[0]?.count ?? 0,
+    },
+  };
+}}

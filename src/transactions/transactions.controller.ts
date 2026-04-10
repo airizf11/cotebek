@@ -11,6 +11,7 @@ import {
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('transactions')
 @UseGuards(ApiKeyGuard) // <-- Pasang satpam di seluruh endpoint transaksi!
@@ -18,22 +19,24 @@ export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Post()
-  create(@Req() request: any, @Body() createTransactionDto: CreateTransactionDto) {
-    // Ambil info usaha dari request yang udah diloloskan satpam
-    const appId = request.appInfo.id; 
-    
-    // Kirim ke service buat dicatat ke database
-    return this.transactionsService.create(appId, createTransactionDto);
-  }
+create(@Req() req: any, @Body() dto: CreateTransactionDto) {
+  return this.transactionsService.create(req.appInfo.id, dto, req.user?.id, req.ip); // ✅
+}
 
   @Get()
-  findAll(
-    @Req() request: any,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('type') type?: string, // Filter opsional: 'IN' atau 'OUT'
-  ) {
-    const appId = request.appInfo.id;
-    return this.transactionsService.findAll(appId, startDate, endDate, type);
-  }
+findAll(
+  @Req() req: any,
+  @Query() pagination: PaginationDto,        // ✅
+  @Query('startDate') startDate?: string,
+  @Query('endDate') endDate?: string,
+  @Query('type') type?: string,
+) {
+  return this.transactionsService.findAll(
+    req.appInfo.id,
+    pagination,
+    startDate,
+    endDate,
+    type,
+  );
+}
 }

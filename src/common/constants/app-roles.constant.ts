@@ -29,6 +29,13 @@ export const AUDIT_ACTIONS = {
   CREATE_TRANSACTION: 'CREATE_TRANSACTION',
 } as const;
 
+export enum OrderStatus {  // ✅
+  RECEIVED = 'RECEIVED',
+  IN_PROCESS = 'IN_PROCESS',
+  READY = 'READY',
+  DONE = 'DONE',
+}
+
 // Type helpers — bisa dipakai di service/guard lain
 export type AppRole = typeof APP_ROLES[keyof typeof APP_ROLES];
 export type JoinStatus = typeof JOIN_STATUS[keyof typeof JOIN_STATUS];

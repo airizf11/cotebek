@@ -51,4 +51,9 @@ export class ReportsController {
     const appId = request.appInfo.id;
     return this.reportsService.getPaymentMethods(appId, startDate, endDate);
   }
+
+  @Get('overview')
+getOverview(@Req() request: any) {
+  return this.reportsService.getOverview(request.appInfo.id);
+}
 }
