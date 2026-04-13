@@ -16,6 +16,7 @@ export const JOIN_STATUS = {
 export const AUDIT_ACTIONS = {
   // Orders
   CREATE_ORDER: 'CREATE_ORDER',
+  UPDATE_ORDER_STATUS: 'UPDATE_ORDER_STATUS',
   // Items
   CREATE_ITEM: 'CREATE_ITEM',
   UPDATE_ITEM: 'UPDATE_ITEM',
@@ -29,7 +30,8 @@ export const AUDIT_ACTIONS = {
   CREATE_TRANSACTION: 'CREATE_TRANSACTION',
 } as const;
 
-export enum OrderStatus {  // ✅
+export enum OrderStatus {
+  // ✅
   RECEIVED = 'RECEIVED',
   IN_PROCESS = 'IN_PROCESS',
   READY = 'READY',
@@ -37,6 +39,6 @@ export enum OrderStatus {  // ✅
 }
 
 // Type helpers — bisa dipakai di service/guard lain
-export type AppRole = typeof APP_ROLES[keyof typeof APP_ROLES];
-export type JoinStatus = typeof JOIN_STATUS[keyof typeof JOIN_STATUS];
-export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
+export type AppRole = (typeof APP_ROLES)[keyof typeof APP_ROLES];
+export type JoinStatus = (typeof JOIN_STATUS)[keyof typeof JOIN_STATUS];
+export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

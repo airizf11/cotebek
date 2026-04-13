@@ -1,5 +1,11 @@
 // cotebek/src/orders/orders.service.ts
-import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
@@ -16,7 +22,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   RECEIVED: ['IN_PROCESS'],
   IN_PROCESS: ['READY'],
   READY: ['DONE'],
-  DONE: [],           // terminal — tidak bisa diubah lagi
+  DONE: [], // terminal — tidak bisa diubah lagi
 };
 
 @Injectable()
@@ -26,21 +32,27 @@ export class OrdersService {
     private auditService: AuditService,
   ) {}
 
-  async create(appId: string, dto: CreateOrderDto, handledBy?: string | null, ipAddress?: string | null) {
+  async create(
+    appId: string,
+    dto: CreateOrderDto,
+    handledBy?: string | null,
+    ipAddress?: string | null,
+  ) {
     try {
       // Mulai Database Transaction (tx)
       // Kalau salah satu gagal, semuanya otomatis di-Cancel (Rollback)
       const result = await this.db.transaction(async (tx) => {
-        
         // 1. BUAT STRUK INDUK (Insert ke table orders)
-        const newOrder = await tx.insert(schema.orders).values({
-          appId,
-            customerId: dto.customerId ?? null,   // ✅
+        const newOrder = await tx
+          .insert(schema.orders)
+          .values({
+            appId,
+            customerId: dto.customerId ?? null, // ✅
             handledBy: handledBy ?? null,
             orderNumber: dto.orderNumber,
             totalAmount: dto.totalAmount.toString(),
             totalCogs: dto.totalCogs.toString(),
-            status: 'RECEIVED',                   // ✅ default RECEIVED, not PAID
+            status: 'RECEIVED', // ✅ default RECEIVED, not PAID
             dueDate: dto.dueDate ? new Date(dto.dueDate) : null, // ✅
             metadata: dto.metadata,
           })
@@ -92,7 +104,6 @@ export class OrdersService {
         message: 'Order successfully recorded.',
         data: result,
       };
-
     } catch (error) {
       console.error('Transaction failed, rollback executed:', error);
       throw new InternalServerErrorException('Failed to process order.');
@@ -100,12 +111,21 @@ export class OrdersService {
   }
 
   async findAll(appId: string, query: QueryOrderDto) {
-    const { page = 1, limit = 20, offset, status, startDate, endDate, customerId } = query;
+    const {
+      page = 1,
+      limit = 20,
+      offset,
+      status,
+      startDate,
+      endDate,
+      customerId,
+    } = query;
 
     const filters = [eq(schema.orders.appId, appId)];
     if (status) filters.push(eq(schema.orders.status, status as any));
     if (customerId) filters.push(eq(schema.orders.customerId, customerId));
-    if (startDate) filters.push(gte(schema.orders.createdAt, new Date(startDate)));
+    if (startDate)
+      filters.push(gte(schema.orders.createdAt, new Date(startDate)));
     if (endDate) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
@@ -221,7 +241,7 @@ export class OrdersService {
     await this.auditService.log({
       appId,
       userId: userId ?? null,
-      action: AUDIT_ACTIONS.CREATE_ORDER, // reuse — atau bisa tambah UPDATE_ORDER_STATUS nanti
+      action: AUDIT_ACTIONS.UPDATE_ORDER_STATUS,
       entity: 'orders',
       entityId: id,
       before: { status: currentStatus },

@@ -16,9 +16,7 @@ import { paginate } from '../common/utils/paginate.util';
 
 @Injectable()
 export class CustomersService {
-  constructor(
-    @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
-  ) {}
+  constructor(@Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>) {}
 
   async create(appId: string, dto: CreateCustomerDto) {
     // Check duplicate phone per appId
@@ -81,7 +79,8 @@ export class CustomersService {
     }
 
     if (city) filters.push(ilike(schema.customers.city, `%${city}%`));
-    if (district) filters.push(ilike(schema.customers.district, `%${district}%`));
+    if (district)
+      filters.push(ilike(schema.customers.district, `%${district}%`));
 
     // Filter by tag — jsonb array contains
     if (tag) {
@@ -115,7 +114,9 @@ export class CustomersService {
     const customer = await this.db
       .select()
       .from(schema.customers)
-      .where(and(eq(schema.customers.id, id), eq(schema.customers.appId, appId)))
+      .where(
+        and(eq(schema.customers.id, id), eq(schema.customers.appId, appId)),
+      )
       .limit(1);
 
     if (!customer[0]) throw new NotFoundException('Customer not found.');
@@ -139,7 +140,7 @@ export class CustomersService {
       message: 'Customer detail successfully retrieved.',
       data: {
         ...customer[0],
-        orderHistory: orderHistory.map(o => ({
+        orderHistory: orderHistory.map((o) => ({
           ...o,
           totalAmount: Number(o.totalAmount),
         })),
@@ -174,11 +175,12 @@ export class CustomersService {
     if (dto.email !== undefined) updateData.email = dto.email;
     if (dto.gender !== undefined) updateData.gender = dto.gender;
     if (dto.birthDate !== undefined) updateData.birthDate = dto.birthDate;
-    if (dto.addressDetail !== undefined) updateData.addressDetail = dto.addressDetail;
-    if (dto.village !== undefined) updateData.kelurahan = dto.village;
-    if (dto.district !== undefined) updateData.kecamatan = dto.district;
-    if (dto.city !== undefined) updateData.kota = dto.city;
-    if (dto.province !== undefined) updateData.provinsi = dto.province;
+    if (dto.addressDetail !== undefined)
+      updateData.addressDetail = dto.addressDetail;
+    if (dto.village !== undefined) updateData.village = dto.village;
+    if (dto.district !== undefined) updateData.district = dto.district;
+    if (dto.city !== undefined) updateData.city = dto.city;
+    if (dto.province !== undefined) updateData.province = dto.province;
     if (dto.postalCode !== undefined) updateData.postalCode = dto.postalCode;
     if (dto.notes !== undefined) updateData.notes = dto.notes;
     if (dto.tags !== undefined) updateData.tags = dto.tags;
@@ -186,7 +188,9 @@ export class CustomersService {
     const updated = await this.db
       .update(schema.customers)
       .set(updateData)
-      .where(and(eq(schema.customers.id, id), eq(schema.customers.appId, appId)))
+      .where(
+        and(eq(schema.customers.id, id), eq(schema.customers.appId, appId)),
+      )
       .returning();
 
     if (!updated[0]) throw new NotFoundException('Customer not found.');

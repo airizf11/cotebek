@@ -37,6 +37,7 @@ export const joinStatusEnum = pgEnum('join_status', [
 export const auditActionEnum = pgEnum('audit_action', [
   // Orders
   'CREATE_ORDER',
+  'UPDATE_ORDER_STATUS',
   // Items
   'CREATE_ITEM',
   'UPDATE_ITEM',

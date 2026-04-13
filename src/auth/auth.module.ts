@@ -4,13 +4,10 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { ApiKeyGuard } from './api-key/api-key.guard';
-import * as dotenv from 'dotenv';
 import { DualAuthGuard } from './dual-auth/dual-auth.guard';
 
-dotenv.config();
-
 @Module({
-  imports:[
+  imports: [
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET!,
