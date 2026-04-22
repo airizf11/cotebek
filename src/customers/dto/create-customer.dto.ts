@@ -10,12 +10,7 @@ import {
   Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-enum Gender {
-  MALE = 'MALE',
-  FEMALE = 'FEMALE',
-  OTHER = 'OTHER',
-}
+import { Gender } from 'src/common/constants/enums.constant';
 
 export class CreateCustomerDto {
   @IsString()
@@ -66,9 +61,10 @@ export class CreateCustomerDto {
   @MaxLength(100)
   province?: string;
 
-  @IsOptional() @IsString()
-@Matches(/^\d{5}$/, { message: 'Postal code must be 5 digits.' })
-postalCode?: string;
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{5}$/, { message: 'Postal code must be 5 digits.' })
+  postalCode?: string;
 
   @IsOptional()
   @IsString()

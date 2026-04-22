@@ -1,9 +1,13 @@
 // cotebek/src/app-settings/dto/upsert-setting.dto.ts
-import { IsString } from 'class-validator';
+import { IsDefined, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class UpsertSettingDto {
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   key: string;
 
-  value: any; // flexible — string, number, boolean, object
+  @IsDefined() // ← allow any type (string, number, boolean, object, array)
+  //   tapi tolak undefined dan null
+  value: unknown;
 }

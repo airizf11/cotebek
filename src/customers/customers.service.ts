@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -169,21 +170,13 @@ export class CustomersService {
       }
     }
 
-    const updateData: Record<string, unknown> = {};
-    if (dto.name !== undefined) updateData.name = dto.name;
-    if (dto.phone !== undefined) updateData.phone = dto.phone;
-    if (dto.email !== undefined) updateData.email = dto.email;
-    if (dto.gender !== undefined) updateData.gender = dto.gender;
-    if (dto.birthDate !== undefined) updateData.birthDate = dto.birthDate;
-    if (dto.addressDetail !== undefined)
-      updateData.addressDetail = dto.addressDetail;
-    if (dto.village !== undefined) updateData.village = dto.village;
-    if (dto.district !== undefined) updateData.district = dto.district;
-    if (dto.city !== undefined) updateData.city = dto.city;
-    if (dto.province !== undefined) updateData.province = dto.province;
-    if (dto.postalCode !== undefined) updateData.postalCode = dto.postalCode;
-    if (dto.notes !== undefined) updateData.notes = dto.notes;
-    if (dto.tags !== undefined) updateData.tags = dto.tags;
+    const updateData = Object.fromEntries(
+      Object.entries(dto).filter(([_, v]) => v !== undefined),
+    ) as Partial<typeof dto>;
+
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException('No fields to update.');
+    }
 
     const updated = await this.db
       .update(schema.customers)

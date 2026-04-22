@@ -1,5 +1,15 @@
 // cotebek/src/orders/dto/create-order.dto.ts
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, MaxLength, IsUUID, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  Min,
+  MaxLength,
+  IsUUID,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class OrderItemDto {
@@ -35,7 +45,7 @@ export class CreateOrderDto {
   @IsOptional()
   @IsUUID()
   customerId?: string;
-  
+
   @IsString()
   @MaxLength(100)
   orderNumber: string;
@@ -54,13 +64,18 @@ export class CreateOrderDto {
 
   @IsOptional()
   @IsDateString()
-  dueDate?: string;                  // ✅ new — ISO string, optional karena bisa auto-calc
+  dueDate?: string; // ✅ new — ISO string, optional karena bisa auto-calc
 
   @IsOptional()
   metadata?: any;
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => OrderItemDto)        // ← diperlukan class-transformer untuk nested validation
+  @Type(() => OrderItemDto) // ← diperlukan class-transformer untuk nested validation
   items: OrderItemDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  promoCode?: string; // client kirim kode promo saat checkout
 }

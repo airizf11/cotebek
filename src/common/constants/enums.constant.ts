@@ -31,11 +31,40 @@ export const AUDIT_ACTIONS = {
 } as const;
 
 export enum OrderStatus {
-  // ✅
   RECEIVED = 'RECEIVED',
   IN_PROCESS = 'IN_PROCESS',
   READY = 'READY',
   DONE = 'DONE',
+}
+
+export enum TransactionType {
+  IN = 'IN',
+  OUT = 'OUT',
+}
+
+export enum TransactionCategory {
+  SALES = 'SALES',
+  EXPENSE = 'EXPENSE',
+  FUND_IN = 'FUND_IN',
+  FUND_OUT = 'FUND_OUT',
+  OTHER = 'OTHER',
+}
+
+export enum Gender {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  OTHER = 'OTHER',
+}
+
+export enum PromoType {
+  PERCENTAGE = 'PERCENTAGE',
+  NOMINAL = 'NOMINAL',
+}
+
+export enum PromoScope {
+  ALL = 'ALL',
+  SPECIFIC_ITEMS = 'SPECIFIC_ITEMS',
+  SPECIFIC_CUSTOMERS = 'SPECIFIC_CUSTOMERS',
 }
 
 // Type helpers — bisa dipakai di service/guard lain

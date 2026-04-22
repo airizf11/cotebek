@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { DRIZZLE } from '../../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../database/schema';
-import { AuditAction } from '../constants/app-roles.constant';
+import { AuditAction } from '../constants/enums.constant';
 
 export interface AuditPayload {
   appId: string;

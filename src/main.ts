@@ -5,9 +5,17 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger:
+      process.env.NODE_ENV === 'production'
+        ? ['error', 'warn', 'log'] // production: tidak tampilkan debug/verbose
+        : ['error', 'warn', 'log', 'debug', 'verbose'], // development: semua level
+  });
+
+  app.use(helmet());
 
   // ✅ CORS — restrict origins per environment
   app.enableCors({

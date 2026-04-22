@@ -5,16 +5,24 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { ApiKeyGuard } from './api-key/api-key.guard';
 import { DualAuthGuard } from './dual-auth/dual-auth.guard';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 
 @Module({
   imports: [
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET!,
-      signOptions: { expiresIn: '1d' }, // Token berlaku 1 hari
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '15m' },
+      }),
     }),
   ],
-  providers: [JwtStrategy, ApiKeyGuard, DualAuthGuard],
-  exports: [JwtModule, ApiKeyGuard, DualAuthGuard], // Export biar bisa dipakai di tempat lain
+  controllers: [AuthController],
+  providers: [JwtStrategy, ApiKeyGuard, DualAuthGuard, AuthService],
+  exports: [JwtModule, ApiKeyGuard, DualAuthGuard, AuthService], // Export biar bisa dipakai di tempat lain
 })
 export class AuthModule {}

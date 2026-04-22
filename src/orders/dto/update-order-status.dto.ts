@@ -1,6 +1,6 @@
 // cotebek/src/orders/dto/update-order-status.dto.ts
 import { IsEnum } from 'class-validator';
-import { OrderStatus } from 'src/common/constants/app-roles.constant';
+import { OrderStatus } from 'src/common/constants/enums.constant';
 
 export class UpdateOrderStatusDto {
   @IsEnum(OrderStatus, {

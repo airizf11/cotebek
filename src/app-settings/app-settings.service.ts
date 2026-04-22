@@ -9,9 +9,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 
 @Injectable()
 export class AppSettingsService {
-  constructor(
-    @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
-  ) {}
+  constructor(@Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>) {}
 
   // Get all settings for an app — returns as flat key-value object
   async findAll(appId: string) {
@@ -92,9 +90,38 @@ export class AppSettingsService {
 
   // Bulk upsert — untuk initial setup saat buat usaha baru
   async bulkUpsert(appId: string, dto: BulkUpsertSettingsDto) {
-    await Promise.all(
-      dto.settings.map((setting) => this.upsert(appId, setting)),
-    );
+    await this.db.transaction(async (tx) => {
+      for (const setting of dto.settings) {
+        const existing = await tx
+          .select()
+          .from(schema.appSettings)
+          .where(
+            and(
+              eq(schema.appSettings.appId, appId),
+              eq(schema.appSettings.key, setting.key),
+            ),
+          )
+          .limit(1);
+
+        if (existing[0]) {
+          await tx
+            .update(schema.appSettings)
+            .set({ value: setting.value })
+            .where(
+              and(
+                eq(schema.appSettings.appId, appId),
+                eq(schema.appSettings.key, setting.key),
+              ),
+            );
+        } else {
+          await tx.insert(schema.appSettings).values({
+            appId,
+            key: setting.key,
+            value: setting.value,
+          });
+        }
+      }
+    });
 
     return {
       message: `${dto.settings.length} settings successfully saved.`,
@@ -123,7 +150,11 @@ export class AppSettingsService {
   }
 
   // Helper — dipakai service lain untuk baca config
-  async getValue<T = unknown>(appId: string, key: string, defaultValue?: T): Promise<T> {
+  async getValue<T = unknown>(
+    appId: string,
+    key: string,
+    defaultValue?: T,
+  ): Promise<T> {
     const row = await this.db
       .select()
       .from(schema.appSettings)

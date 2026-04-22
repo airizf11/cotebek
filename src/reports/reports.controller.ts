@@ -2,13 +2,19 @@
 import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { APP_ROLES } from 'src/common/constants/enums.constant';
 
+@ApiTags('Reports')
+@ApiSecurity('ApiKey')
 @Controller('reports')
 @UseGuards(ApiKeyGuard) // Selalu amankan API-mu!
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('summary')
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
   getSummary(
     @Req() request: any,
     @Query('startDate') startDate?: string,
@@ -16,11 +22,12 @@ export class ReportsController {
   ) {
     // Ambil appId dari satpam (API Key yang lagi dipakai)
     const appId = request.appInfo.id;
-    
+
     return this.reportsService.getSummary(appId, startDate, endDate);
   }
 
   @Get('top-items')
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
   getTopItems(
     @Req() request: any,
     @Query('startDate') startDate?: string,
@@ -32,6 +39,7 @@ export class ReportsController {
 
   // --- SALES TREND (Grafik Garis) ---
   @Get('sales-trend')
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
   getSalesTrend(
     @Req() request: any,
     @Query('startDate') startDate?: string,
@@ -43,6 +51,7 @@ export class ReportsController {
 
   // --- PAYMENT METHODS (Grafik Lingkaran) ---
   @Get('payment-methods')
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
   getPaymentMethods(
     @Req() request: any,
     @Query('startDate') startDate?: string,
@@ -53,7 +62,8 @@ export class ReportsController {
   }
 
   @Get('overview')
-getOverview(@Req() request: any) {
-  return this.reportsService.getOverview(request.appInfo.id);
-}
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  getOverview(@Req() request: any) {
+    return this.reportsService.getOverview(request.appInfo.id);
+  }
 }

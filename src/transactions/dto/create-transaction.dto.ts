@@ -1,18 +1,16 @@
 // cotebek/src/transactions/dto/create-transaction.dto.ts
-import { IsString, IsNumber, IsOptional, IsEnum, Min, MaxLength } from 'class-validator';
-
-enum TransactionType {
-  IN = 'IN',
-  OUT = 'OUT',
-}
-
-enum TransactionCategory {
-  SALES = 'SALES',
-  EXPENSE = 'EXPENSE',
-  FUND_IN = 'FUND_IN',
-  FUND_OUT = 'FUND_OUT',
-  OTHER = 'OTHER',
-}
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  Min,
+  MaxLength,
+} from 'class-validator';
+import {
+  TransactionCategory,
+  TransactionType,
+} from 'src/common/constants/enums.constant';
 
 export class CreateTransactionDto {
   @IsEnum(TransactionType)

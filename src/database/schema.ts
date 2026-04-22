@@ -60,6 +60,14 @@ export const orderStatusEnum = pgEnum('order_status', [
   'DONE',
 ]);
 
+export const promoTypeEnum = pgEnum('promo_type', ['PERCENTAGE', 'NOMINAL']);
+
+export const promoScopeEnum = pgEnum('promo_scope', [
+  'ALL',
+  'SPECIFIC_ITEMS',
+  'SPECIFIC_CUSTOMERS',
+]);
+
 export const users = pgTable('user', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name'),
@@ -118,6 +126,22 @@ export const verificationTokens = pgTable(
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
   }),
 );
+
+export const refreshTokens = pgTable('refresh_token', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).notNull(),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).defaultNow(),
+});
 
 /*
 export const users = pgTable('users', {
@@ -229,6 +253,7 @@ export const customers = pgTable('customers', {
     .references(() => apps.id, { onDelete: 'cascade' })
     .notNull(),
   name: text('name').notNull(),
+  loyaltyPoints: integer('loyalty_points').default(0).notNull(),
   phone: varchar('phone', { length: 20 }).notNull(),
   email: text('email'),
   gender: genderEnum('gender'),
@@ -281,7 +306,13 @@ export const orders = pgTable('orders', {
   totalAmount: decimal('total_amount', { precision: 15, scale: 2 }).notNull(),
   totalCogs: decimal('total_cogs', { precision: 15, scale: 2 }).default('0'),
   paymentMethod: varchar('payment_method', { length: 100 }),
-  status: varchar('status', { length: 100 }).default('RECEIVED'),
+  status: orderStatusEnum('status').default('RECEIVED').notNull(),
+  promoId: uuid('promo_id').references(() => promos.id), // nullable
+  discountAmount: decimal('discount_amount', {
+    precision: 15,
+    scale: 2,
+  }).default('0'),
+  finalAmount: decimal('final_amount', { precision: 15, scale: 2 }), // nullable, diisi saat create
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at', {
     withTimezone: true,
@@ -322,6 +353,56 @@ export const auditLogs = pgTable('audit_logs', {
   before: jsonb('before'), // state sebelum (update/delete)
   after: jsonb('after'), // state sesudah
   ipAddress: varchar('ip_address', { length: 45 }), // IPv4 max 15, IPv6 max 45
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).defaultNow(),
+});
+
+export const promos = pgTable('promos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id')
+    .references(() => apps.id, { onDelete: 'cascade' })
+    .notNull(),
+  name: text('name').notNull(),
+  code: varchar('code', { length: 50 }), // nullable = promo tanpa kode (manual apply)
+  type: promoTypeEnum('type').notNull(),
+  value: decimal('value', { precision: 15, scale: 2 }).notNull(),
+  minOrder: decimal('min_order', { precision: 15, scale: 2 }),
+  maxDiscount: decimal('max_discount', { precision: 15, scale: 2 }), // cap untuk PERCENTAGE
+  scope: promoScopeEnum('scope').default('ALL').notNull(),
+  itemIds: jsonb('item_ids').$type<string[]>(), // nullable
+  customerIds: jsonb('customer_ids').$type<string[]>(), // nullable
+  isActive: boolean('is_active').default(true).notNull(),
+  startDate: timestamp('start_date', { withTimezone: true, mode: 'date' }),
+  endDate: timestamp('end_date', { withTimezone: true, mode: 'date' }),
+  usageLimit: integer('usage_limit'), // nullable = unlimited
+  usageCount: integer('usage_count').default(0).notNull(),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export const promoUsages = pgTable('promo_usages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id')
+    .references(() => apps.id, { onDelete: 'cascade' })
+    .notNull(),
+  promoId: uuid('promo_id')
+    .references(() => promos.id)
+    .notNull(),
+  orderId: uuid('order_id')
+    .references(() => orders.id)
+    .notNull(),
+  customerId: uuid('customer_id').references(() => customers.id),
+  discountAmount: decimal('discount_amount', {
+    precision: 15,
+    scale: 2,
+  }).notNull(),
   createdAt: timestamp('created_at', {
     withTimezone: true,
     mode: 'date',

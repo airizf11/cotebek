@@ -1,7 +1,7 @@
 // cotebek/src/orders/dto/query-order.dto.ts
 import { IsOptional, IsEnum, IsString, IsDateString } from 'class-validator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { OrderStatus } from 'src/common/constants/app-roles.constant';
+import { OrderStatus } from 'src/common/constants/enums.constant';
 
 export class QueryOrderDto extends PaginationDto {
   @IsOptional()

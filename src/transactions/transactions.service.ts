@@ -6,7 +6,7 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { eq, gte, lte, and, desc, count, sum } from 'drizzle-orm';
 import { AuditService } from 'src/common/services/audit.service';
-import { AUDIT_ACTIONS } from 'src/common/constants/app-roles.constant';
+import { AUDIT_ACTIONS } from 'src/common/constants/enums.constant';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { paginate } from 'src/common/utils/paginate.util';
 

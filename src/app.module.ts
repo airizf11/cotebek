@@ -16,6 +16,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './common/config/env.validation';
 import { ConfigModule } from '@nestjs/config';
+import { RolesGuard } from './common/guards/roles.guard';
+import { PromosModule } from './promos/promos.module';
 
 @Module({
   imports: [
@@ -48,6 +50,7 @@ import { ConfigModule } from '@nestjs/config';
     UsersModule,
     CustomersModule,
     AppSettingsModule,
+    PromosModule,
   ],
   controllers: [AppController],
   providers: [
@@ -55,6 +58,10 @@ import { ConfigModule } from '@nestjs/config';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })
