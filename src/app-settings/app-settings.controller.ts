@@ -39,18 +39,33 @@ export class AppSettingsController {
   @Post()
   @Roles(APP_ROLES.OWNER)
   upsert(@Req() req: any, @Body() dto: UpsertSettingDto) {
-    return this.appSettingsService.upsert(req.appInfo.id, dto);
+    return this.appSettingsService.upsert(
+      req.appInfo.id,
+      dto,
+      req.user?.id,
+      req.ip,
+    );
   }
 
   @Post('bulk')
   @Roles(APP_ROLES.OWNER)
   bulkUpsert(@Req() req: any, @Body() dto: BulkUpsertSettingsDto) {
-    return this.appSettingsService.bulkUpsert(req.appInfo.id, dto);
+    return this.appSettingsService.bulkUpsert(
+      req.appInfo.id,
+      dto,
+      req.user?.id,
+      req.ip,
+    );
   }
 
   @Delete(':key')
   @Roles(APP_ROLES.OWNER)
   remove(@Req() req: any, @Param('key') key: string) {
-    return this.appSettingsService.remove(req.appInfo.id, key);
+    return this.appSettingsService.remove(
+      req.appInfo.id,
+      key,
+      req.user?.id,
+      req.ip,
+    );
   }
 }

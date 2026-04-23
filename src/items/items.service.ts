@@ -20,7 +20,7 @@ import { paginate } from 'src/common/utils/paginate.util';
 export class ItemsService {
   constructor(
     @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
-    private auditService: AuditService, // ✅
+    private auditService: AuditService,
   ) {}
 
   async create(
@@ -42,7 +42,6 @@ export class ItemsService {
       .returning();
 
     await this.auditService.log({
-      // ✅
       appId,
       userId: userId ?? null,
       action: AUDIT_ACTIONS.CREATE_ITEM,

@@ -16,4 +16,7 @@ export const envValidationSchema = Joi.object({
 
   // CORS (optional — defaults to *)
   ALLOWED_ORIGINS: Joi.string().optional(),
+
+  SWAGGER_USER: Joi.string().optional(),
+  SWAGGER_PASS: Joi.string().optional(),
 });

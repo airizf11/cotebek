@@ -6,6 +6,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import basicAuth from 'express-basic-auth';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -47,6 +48,20 @@ async function bootstrap() {
   app.enableShutdownHooks(); // ✅ graceful shutdown
 
   // ─── SWAGGER SETUP ────────────────────────────────────────────
+  const swaggerUser = process.env.SWAGGER_USER;
+  const swaggerPass = process.env.SWAGGER_PASS;
+
+  // Kalau env di-set → aktifkan Basic Auth guard dulu sebelum Swagger setup
+  if (swaggerUser && swaggerPass) {
+    app.use(
+      '/cteapi/docs',
+      basicAuth({
+        users: { [swaggerUser]: swaggerPass },
+        challenge: true, // ← munculkan browser login popup
+      }),
+    );
+  }
+
   const config = new DocumentBuilder()
     .setTitle('CoTEBek API')
     .setDescription(
@@ -67,14 +82,11 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  // Only expose docs in non-production
-  if (process.env.NODE_ENV !== 'production') {
-    SwaggerModule.setup('cteapi/docs', app, document, {
-      swaggerOptions: {
-        persistAuthorization: true, // token tidak hilang saat refresh
-      },
-    });
-  }
+  SwaggerModule.setup('cteapi/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true, // token tidak hilang saat refresh
+    },
+  });
   // ──────────────────────────────────────────────────────────────
 
   await app.listen(process.env.PORT ?? 3000);

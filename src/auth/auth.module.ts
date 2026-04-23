@@ -8,6 +8,8 @@ import { DualAuthGuard } from './dual-auth/dual-auth.guard';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TokenCleanupService } from './token-cleanup.service';
+import { AuditModule } from 'src/common/audit.module';
 
 @Module({
   imports: [
@@ -20,9 +22,16 @@ import { AuthService } from './auth.service';
         signOptions: { expiresIn: '15m' },
       }),
     }),
+    AuditModule,
   ],
   controllers: [AuthController],
-  providers: [JwtStrategy, ApiKeyGuard, DualAuthGuard, AuthService],
+  providers: [
+    JwtStrategy,
+    ApiKeyGuard,
+    DualAuthGuard,
+    AuthService,
+    TokenCleanupService,
+  ],
   exports: [JwtModule, ApiKeyGuard, DualAuthGuard, AuthService], // Export biar bisa dipakai di tempat lain
 })
 export class AuthModule {}

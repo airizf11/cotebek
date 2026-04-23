@@ -4,7 +4,6 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
-  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -23,7 +22,6 @@ export class DualAuthGuard implements CanActivate {
     private jwtService: JwtService,
     private config: ConfigService,
     private reflector: Reflector,
-    // private readonly logger = new Logger(DualAuthGuard.name),
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

@@ -43,6 +43,27 @@
       "when": 1776850901734,
       "tag": "0005_burly_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776886348187,
+      "tag": "0006_magical_zaran",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776920655625,
+      "tag": "0007_pale_the_executioner",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776921637335,
+      "tag": "0008_tired_risque",
+      "breakpoints": true
     }
   ]
 }

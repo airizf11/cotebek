@@ -29,7 +29,12 @@ export class CustomersController {
   @Post()
   @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
   create(@Req() req: any, @Body() dto: CreateCustomerDto) {
-    return this.customersService.create(req.appInfo.id, dto);
+    return this.customersService.create(
+      req.appInfo.id,
+      dto,
+      req.user?.id,
+      req.ip,
+    );
   }
 
   @Get()
@@ -57,6 +62,12 @@ export class CustomersController {
     @Param('id') id: string,
     @Body() dto: UpdateCustomerDto,
   ) {
-    return this.customersService.update(req.appInfo.id, id, dto);
+    return this.customersService.update(
+      req.appInfo.id,
+      id,
+      dto,
+      req.user?.id,
+      req.ip,
+    );
   }
 }

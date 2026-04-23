@@ -6,7 +6,7 @@ import * as schema from '../../database/schema';
 import { AuditAction } from '../constants/enums.constant';
 
 export interface AuditPayload {
-  appId: string;
+  appId?: string | null;
   userId?: string | null;
   action: AuditAction;
   entity: string;

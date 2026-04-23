@@ -1,16 +1,17 @@
 // cotebek/src/auth/jwt.strategy.ts
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private config: ConfigService) {
     super({
       // Kasih tau satpam buat nyari token di header "Authorization: Bearer <token>"
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false, // Tolak token yang udah expired
-      secretOrKey: process.env.JWT_SECRET!, // Cocokkan dengan password di .env
+      secretOrKey: config.getOrThrow<string>('JWT_SECRET'), // Cocokkan dengan password di .env
     });
   }
 
@@ -18,10 +19,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     // payload ini berisi data yang disimpan di dalam JWT (misal: ID User & Email)
     // Data yang di-return di sini otomatis ditempelkan ke 'request.user'
-    return { 
-      id: payload.sub, 
-      email: payload.email, 
-      role: payload.role 
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
     };
   }
 }

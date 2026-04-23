@@ -1,4 +1,4 @@
-// cotebek/src/common/constants/app-roles.constant.ts
+// cotebek/src/common/constants/enums.constant.ts
 export const APP_ROLES = {
   OWNER: 'OWNER',
   ADMIN: 'ADMIN',
@@ -28,6 +28,18 @@ export const AUDIT_ACTIONS = {
   REMOVE_MEMBER: 'REMOVE_MEMBER',
   // Transactions
   CREATE_TRANSACTION: 'CREATE_TRANSACTION',
+  // Customers
+  CREATE_CUSTOMER: 'CREATE_CUSTOMER',
+  UPDATE_CUSTOMER: 'UPDATE_CUSTOMER',
+  DELETE_CUSTOMER: 'DELETE_CUSTOMER',
+  // Promos
+  CREATE_PROMO: 'CREATE_PROMO',
+  UPDATE_PROMO: 'UPDATE_PROMO',
+  DELETE_PROMO: 'DELETE_PROMO',
+  // App Settings
+  UPDATE_APP_SETTINGS: 'UPDATE_APP_SETTINGS',
+  // Auth
+  USER_LOGIN: 'USER_LOGIN',
 } as const;
 
 export enum OrderStatus {

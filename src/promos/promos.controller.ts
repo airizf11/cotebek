@@ -40,7 +40,7 @@ export class PromosController {
   @ApiResponse({ status: 201, description: 'Promo created.' })
   @ApiResponse({ status: 409, description: 'Promo code already exists.' })
   create(@Req() req: any, @Body() dto: CreatePromoDto) {
-    return this.promosService.create(req.appInfo.id, dto);
+    return this.promosService.create(req.appInfo.id, dto, req.user?.id, req.ip);
   }
 
   @Get()
@@ -70,7 +70,13 @@ export class PromosController {
     @Param('id') id: string,
     @Body() dto: UpdatePromoDto,
   ) {
-    return this.promosService.update(req.appInfo.id, id, dto);
+    return this.promosService.update(
+      req.appInfo.id,
+      id,
+      dto,
+      req.user?.id,
+      req.ip,
+    );
   }
 
   @Delete(':id')
@@ -79,10 +85,10 @@ export class PromosController {
   @ApiResponse({ status: 200, description: 'Promo deactivated.' })
   @ApiResponse({ status: 404, description: 'Promo not found.' })
   remove(@Req() req: any, @Param('id') id: string) {
-    return this.promosService.remove(req.appInfo.id, id);
+    return this.promosService.remove(req.appInfo.id, id, req.user?.id, req.ip);
   }
 
-  // ─── Check promo sebelum checkout ─────────────────────────────────
+  // ─── Check promo sebelum checkout ────
   @Post('check')
   @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({

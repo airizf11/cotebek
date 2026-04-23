@@ -14,11 +14,19 @@ import { CreatePromoDto } from './dto/create-promo.dto';
 import { UpdatePromoDto } from './dto/update-promo.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { paginate } from 'src/common/utils/paginate.util';
-import { PromoScope, PromoType } from 'src/common/constants/enums.constant';
+import {
+  AUDIT_ACTIONS,
+  PromoScope,
+  PromoType,
+} from 'src/common/constants/enums.constant';
+import { AuditService } from 'src/common/services/audit.service';
 
 @Injectable()
 export class PromosService {
-  constructor(@Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>) {}
+  constructor(
+    @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
+    private auditService: AuditService,
+  ) {}
 
   // ─── Private: Hitung Diskon ────────────────────────────────────────
   calculateDiscount(
@@ -110,7 +118,12 @@ export class PromosService {
   }
 
   // ─── CRUD ──────────────────────────────────────────────────────────
-  async create(appId: string, dto: CreatePromoDto) {
+  async create(
+    appId: string,
+    dto: CreatePromoDto,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
     // Cek duplikat kode dalam app yang sama
     if (dto.code) {
       const existing = await this.db
@@ -144,6 +157,23 @@ export class PromosService {
         usageLimit: dto.usageLimit ?? null,
       })
       .returning();
+
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.CREATE_PROMO,
+      entity: 'promos',
+      entityId: newPromo[0].id,
+      after: {
+        name: dto.name,
+        code: dto.code,
+        type: dto.type,
+        value: dto.value,
+        scope: dto.scope,
+        isActive: dto.isActive ?? true,
+      },
+      ipAddress: ipAddress ?? null,
+    });
 
     return { message: 'Promo successfully created.', data: newPromo[0] };
   }
@@ -184,7 +214,13 @@ export class PromosService {
     return { message: 'Promo detail successfully retrieved.', data: promo[0] };
   }
 
-  async update(appId: string, id: string, dto: UpdatePromoDto) {
+  async update(
+    appId: string,
+    id: string,
+    dto: UpdatePromoDto,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
     // Cek duplikat kode jika code diubah
     if (dto.code) {
       const existing = await this.db
@@ -214,6 +250,9 @@ export class PromosService {
     if (updateData.maxDiscount !== undefined)
       updateData.maxDiscount = String(updateData.maxDiscount);
 
+    // ← TAMBAH: ambil state sebelumnya
+    const beforeData = await this.findOne(appId, id);
+
     const updated = await this.db
       .update(schema.promos)
       .set(updateData)
@@ -222,10 +261,29 @@ export class PromosService {
 
     if (!updated[0]) throw new NotFoundException('Promo not found.');
 
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.UPDATE_PROMO,
+      entity: 'promos',
+      entityId: id,
+      before: beforeData.data as Record<string, unknown>,
+      after: updated[0] as unknown as Record<string, unknown>,
+      ipAddress: ipAddress ?? null,
+    });
+
     return { message: 'Promo successfully updated.', data: updated[0] };
   }
 
-  async remove(appId: string, id: string) {
+  async remove(
+    appId: string,
+    id: string,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
+    // ← TAMBAH: ambil state sebelumnya
+    const beforeData = await this.findOne(appId, id);
+
     // Soft delete via isActive = false
     const deleted = await this.db
       .update(schema.promos)
@@ -234,6 +292,17 @@ export class PromosService {
       .returning();
 
     if (!deleted[0]) throw new NotFoundException('Promo not found.');
+
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.DELETE_PROMO,
+      entity: 'promos',
+      entityId: id,
+      before: beforeData.data as Record<string, unknown>,
+      after: { isActive: false },
+      ipAddress: ipAddress ?? null,
+    });
 
     return { message: 'Promo successfully deactivated.' };
   }

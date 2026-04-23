@@ -6,10 +6,15 @@ import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { eq, and, inArray } from 'drizzle-orm';
+import { AuditService } from 'src/common/services/audit.service';
+import { AUDIT_ACTIONS } from 'src/common/constants/enums.constant';
 
 @Injectable()
 export class AppSettingsService {
-  constructor(@Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>) {}
+  constructor(
+    @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
+    private auditService: AuditService,
+  ) {}
 
   // Get all settings for an app — returns as flat key-value object
   async findAll(appId: string) {
@@ -52,7 +57,12 @@ export class AppSettingsService {
   }
 
   // Upsert single setting
-  async upsert(appId: string, dto: UpsertSettingDto) {
+  async upsert(
+    appId: string,
+    dto: UpsertSettingDto,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
     const existing = await this.db
       .select()
       .from(schema.appSettings)
@@ -63,6 +73,11 @@ export class AppSettingsService {
         ),
       )
       .limit(1);
+
+    // ← TAMBAH: simpan before jika update, null jika insert baru
+    const beforeValue = existing[0]
+      ? { key: existing[0].key, value: existing[0].value }
+      : null;
 
     if (existing[0]) {
       await this.db
@@ -82,6 +97,17 @@ export class AppSettingsService {
       });
     }
 
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.UPDATE_APP_SETTINGS,
+      entity: 'appSettings',
+      entityId: null,
+      before: beforeValue,
+      after: { key: dto.key, value: dto.value },
+      ipAddress: ipAddress ?? null,
+    });
+
     return {
       message: `Setting '${dto.key}' successfully saved.`,
       data: { key: dto.key, value: dto.value },
@@ -89,7 +115,12 @@ export class AppSettingsService {
   }
 
   // Bulk upsert — untuk initial setup saat buat usaha baru
-  async bulkUpsert(appId: string, dto: BulkUpsertSettingsDto) {
+  async bulkUpsert(
+    appId: string,
+    dto: BulkUpsertSettingsDto,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
     await this.db.transaction(async (tx) => {
       for (const setting of dto.settings) {
         const existing = await tx
@@ -102,6 +133,11 @@ export class AppSettingsService {
             ),
           )
           .limit(1);
+
+        // ← TAMBAH: ambil before per setting
+        const beforeValue = existing[0]
+          ? { key: existing[0].key, value: existing[0].value }
+          : null;
 
         if (existing[0]) {
           await tx
@@ -120,6 +156,18 @@ export class AppSettingsService {
             value: setting.value,
           });
         }
+
+        // ← TAMBAH: log per setting di dalam transaksi
+        await this.auditService.log({
+          appId,
+          userId: userId ?? null,
+          action: AUDIT_ACTIONS.UPDATE_APP_SETTINGS,
+          entity: 'appSettings',
+          entityId: null,
+          before: beforeValue,
+          after: { key: setting.key, value: setting.value },
+          ipAddress: ipAddress ?? null,
+        });
       }
     });
 
@@ -133,18 +181,46 @@ export class AppSettingsService {
   }
 
   // Delete setting by key
-  async remove(appId: string, key: string) {
-    const deleted = await this.db
-      .delete(schema.appSettings)
+  async remove(
+    appId: string,
+    key: string,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
+    // ← TAMBAH: ambil before sebelum dihapus
+    const existing = await this.db
+      .select()
+      .from(schema.appSettings)
       .where(
         and(
           eq(schema.appSettings.appId, appId),
           eq(schema.appSettings.key, key),
         ),
       )
-      .returning();
+      .limit(1);
 
-    if (!deleted[0]) throw new NotFoundException(`Setting '${key}' not found.`);
+    if (!existing[0]) throw new NotFoundException(`Setting ${key} not found.`);
+
+    await this.db
+      .delete(schema.appSettings)
+      .where(
+        and(
+          eq(schema.appSettings.appId, appId),
+          eq(schema.appSettings.key, key),
+        ),
+      );
+
+    // ← TAMBAH: before = value lama, after = null (hard delete!)
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.UPDATE_APP_SETTINGS,
+      entity: 'appSettings',
+      entityId: null,
+      before: { key: existing[0].key, value: existing[0].value },
+      after: null,
+      ipAddress: ipAddress ?? null,
+    });
 
     return { message: `Setting '${key}' successfully deleted.` };
   }

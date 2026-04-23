@@ -14,12 +14,22 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
 import { eq, and, or, ilike, sql, count } from 'drizzle-orm';
 import { paginate } from '../common/utils/paginate.util';
+import { AuditService } from 'src/common/services/audit.service';
+import { AUDIT_ACTIONS } from 'src/common/constants/enums.constant';
 
 @Injectable()
 export class CustomersService {
-  constructor(@Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>) {}
+  constructor(
+    @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
+    private auditService: AuditService,
+  ) {}
 
-  async create(appId: string, dto: CreateCustomerDto) {
+  async create(
+    appId: string,
+    dto: CreateCustomerDto,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
     // Check duplicate phone per appId
     const existing = await this.db
       .select()
@@ -57,6 +67,21 @@ export class CustomersService {
         tags: dto.tags ?? [],
       })
       .returning();
+
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.CREATE_CUSTOMER,
+      entity: 'customers',
+      entityId: newCustomer[0].id,
+      after: {
+        name: dto.name,
+        phone: dto.phone,
+        email: dto.email ?? null,
+        city: dto.city ?? null,
+      },
+      ipAddress: ipAddress ?? null,
+    });
 
     return {
       message: 'Customer successfully added.',
@@ -149,7 +174,13 @@ export class CustomersService {
     };
   }
 
-  async update(appId: string, id: string, dto: UpdateCustomerDto) {
+  async update(
+    appId: string,
+    id: string,
+    dto: UpdateCustomerDto,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
     // If phone is being updated, check for duplicate
     if (dto.phone) {
       const existing = await this.db
@@ -178,6 +209,9 @@ export class CustomersService {
       throw new BadRequestException('No fields to update.');
     }
 
+    // ← ambil state sebelumnya
+    const beforeData = await this.findOne(appId, id);
+
     const updated = await this.db
       .update(schema.customers)
       .set(updateData)
@@ -187,6 +221,17 @@ export class CustomersService {
       .returning();
 
     if (!updated[0]) throw new NotFoundException('Customer not found.');
+
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.UPDATE_CUSTOMER,
+      entity: 'customers',
+      entityId: id,
+      before: beforeData.data as Record<string, unknown>,
+      after: updated[0] as unknown as Record<string, unknown>,
+      ipAddress: ipAddress ?? null,
+    });
 
     return { message: 'Customer successfully updated.', data: updated[0] };
   }

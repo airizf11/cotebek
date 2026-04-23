@@ -5,8 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, lt } from 'drizzle-orm';
 import * as crypto from 'crypto';
+import { AuditService } from 'src/common/services/audit.service';
+import { AUDIT_ACTIONS } from 'src/common/constants/enums.constant';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +17,7 @@ export class AuthService {
     @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
     private jwtService: JwtService,
     private config: ConfigService,
+    private auditService: AuditService,
   ) {}
 
   // ─── Generate token pair ───────────────────────────────────────────
@@ -94,9 +98,71 @@ export class AuthService {
   }
 
   // ─── Cleanup: hapus semua expired tokens (bisa dipanggil via cron) ─
-  async cleanupExpiredTokens() {
-    await this.db
+  async cleanupExpiredTokens(): Promise<number> {
+    const deleted = await this.db
       .delete(schema.refreshTokens)
-      .where(eq(schema.refreshTokens.expiresAt, new Date()));
+      .where(lt(schema.refreshTokens.expiresAt, new Date())) // ← semua yang sudah lewat
+      .returning({ id: schema.refreshTokens.id });
+
+    return deleted.length;
+  }
+
+  async login(email: string, password: string, ipAddress?: string | null) {
+    // Cari user by email
+    const users = await this.db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1);
+
+    const user = users[0];
+
+    // Jangan bedain "user tidak ada" vs "password salah"
+    // → response sama untuk keduanya (security best practice)
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      // ← Log failed login attempt juga — penting untuk detect brute force
+      await this.auditService.log({
+        appId: null,
+        userId: user.id,
+        action: AUDIT_ACTIONS.USER_LOGIN,
+        entity: 'users',
+        entityId: user.id,
+        before: null,
+        after: { success: false, reason: 'invalid_password' },
+        ipAddress: ipAddress ?? null,
+      });
+      throw new UnauthorizedException('Invalid credentials.');
+    }
+
+    // Generate tokens
+    const accessToken = this.generateAccessToken({
+      sub: user.id,
+      email: user.email,
+    });
+    const refreshToken = this.generateRefreshToken();
+    await this.saveRefreshToken(user.id, refreshToken);
+
+    // ← Log successful login
+    await this.auditService.log({
+      appId: null,
+      userId: user.id,
+      action: AUDIT_ACTIONS.USER_LOGIN,
+      entity: 'users',
+      entityId: user.id,
+      before: null,
+      after: { success: true },
+      ipAddress: ipAddress ?? null,
+    });
+
+    return {
+      message: 'Login successful.',
+      data: { accessToken, refreshToken },
+    };
   }
 }

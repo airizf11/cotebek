@@ -1,6 +1,7 @@
 // cotebek/src/orders/orders.service.ts
 import {
   BadRequestException,
+  HttpException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -151,6 +152,12 @@ export class OrdersService {
         data: result,
       };
     } catch (error) {
+      // Rethrow HttpException (4xx) as-is, jangan disamarkan jadi 500
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Hanya log & wrap jika truly unexpected (DB error, network, dll)
       this.logger.error(
         'Order transaction failed, rollback executed',
         error instanceof Error ? error.stack : String(error),

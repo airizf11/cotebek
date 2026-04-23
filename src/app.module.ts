@@ -18,6 +18,7 @@ import { envValidationSchema } from './common/config/env.validation';
 import { ConfigModule } from '@nestjs/config';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PromosModule } from './promos/promos.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PromosModule } from './promos/promos.module';
         limit: 5, // 5 requests per window (for sensitive endpoints)
       },
     ]),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     AppsModule,
     AuthModule,

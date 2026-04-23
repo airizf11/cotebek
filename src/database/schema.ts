@@ -49,6 +49,18 @@ export const auditActionEnum = pgEnum('audit_action', [
   'REMOVE_MEMBER',
   // Transactions
   'CREATE_TRANSACTION',
+  // Customers
+  'CREATE_CUSTOMER',
+  'UPDATE_CUSTOMER',
+  'DELETE_CUSTOMER',
+  // Promos
+  'CREATE_PROMO',
+  'UPDATE_PROMO',
+  'DELETE_PROMO',
+  // App Settings
+  'UPDATE_APP_SETTINGS',
+  // Auth
+  'USER_LOGIN',
 ]);
 
 export const genderEnum = pgEnum('gender', ['MALE', 'FEMALE', 'OTHER']);
@@ -73,6 +85,7 @@ export const users = pgTable('user', {
   name: text('name'),
   email: text('email').notNull(),
   emailVerified: timestamp('emailVerified', { mode: 'date' }),
+  password: text('password'),
   image: text('image'),
   createdAt: timestamp('created_at', {
     withTimezone: true,
@@ -343,9 +356,7 @@ export const orderItems = pgTable('order_items', {
 
 export const auditLogs = pgTable('audit_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
-  appId: uuid('app_id')
-    .references(() => apps.id, { onDelete: 'cascade' })
-    .notNull(),
+  appId: uuid('app_id').references(() => apps.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').references(() => users.id), // nullable — ApiKey-only request tidak ada userId
   action: auditActionEnum('action').notNull(),
   entity: varchar('entity', { length: 100 }).notNull(), // 'orders' | 'items' | 'userApps' | ...

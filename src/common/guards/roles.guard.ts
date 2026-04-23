@@ -23,30 +23,30 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // Ambil roles yang dibutuhkan dari decorator
     const requiredRoles = this.reflector.getAllAndOverride<AppRole[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // Kalau endpoint tidak pakai @Roles() → bebas akses (guard tidak aktif)
+    // Tidak ada @Roles() → skip guard sepenuhnya
     if (!requiredRoles || requiredRoles.length === 0) return true;
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
     const appInfo = request.appInfo;
 
-    // Kalau tidak ada user (anonymous) tapi endpoint butuh role → tolak
+    // Ada @Roles() tapi tidak ada appInfo → endpoint ini tidak butuh
+    // role-based check via userApps (contoh: /apps/* yang verify lewat service)
+    if (!appInfo?.id) return true;
+
+    // Ada @Roles() dan ada appInfo → user wajib login
     if (!user?.id) {
       throw new ForbiddenException(
         'Authentication required to access this resource.',
       );
     }
 
-    // Kalau tidak ada appInfo → endpoint tidak pakai ApiKey guard, skip role check
-    if (!appInfo?.id) return true;
-
-    // Query role user di app ini
+    // Cek membership & role user di app ini
     const membership = await this.db
       .select({ role: schema.userApps.role })
       .from(schema.userApps)
@@ -54,7 +54,7 @@ export class RolesGuard implements CanActivate {
         and(
           eq(schema.userApps.userId, user.id),
           eq(schema.userApps.appId, appInfo.id),
-          eq(schema.userApps.status, JOIN_STATUS.ACTIVE),
+          eq(schema.userApps.status, JOIN_STATUS.ACTIVE), // ← pastikan sudah ACTIVE
         ),
       )
       .limit(1);
@@ -71,7 +71,7 @@ export class RolesGuard implements CanActivate {
       );
     }
 
-    // Attach role ke request supaya bisa dipakai di controller/service kalau perlu
+    // Inject role ke request.user supaya bisa dipakai downstream
     request.user.role = userRole;
 
     return true;
