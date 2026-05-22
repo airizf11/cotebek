@@ -5,7 +5,7 @@ import { BulkUpsertSettingsDto } from './dto/bulk-upsert-settings.dto';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { AuditService } from 'src/common/services/audit.service';
 import { AUDIT_ACTIONS } from 'src/common/constants/enums.constant';
 
@@ -121,62 +121,52 @@ export class AppSettingsService {
     userId?: string | null,
     ipAddress?: string | null,
   ) {
-    await this.db.transaction(async (tx) => {
-      for (const setting of dto.settings) {
-        const existing = await tx
-          .select()
-          .from(schema.appSettings)
-          .where(
-            and(
-              eq(schema.appSettings.appId, appId),
-              eq(schema.appSettings.key, setting.key),
-            ),
-          )
-          .limit(1);
+    // 1. Ambil values sebelum upsert untuk audit (1 query, bukan N)
+    const existingKeys = dto.settings.map((s) => s.key);
+    const beforeRows = await this.db
+      .select({ key: schema.appSettings.key, value: schema.appSettings.value })
+      .from(schema.appSettings)
+      .where(
+        and(
+          eq(schema.appSettings.appId, appId),
+          inArray(schema.appSettings.key, existingKeys),
+        ),
+      );
 
-        // ← TAMBAH: ambil before per setting
-        const beforeValue = existing[0]
-          ? { key: existing[0].key, value: existing[0].value }
-          : null;
+    const beforeMap = Object.fromEntries(
+      beforeRows.map((r) => [r.key, r.value]),
+    );
 
-        if (existing[0]) {
-          await tx
-            .update(schema.appSettings)
-            .set({ value: setting.value })
-            .where(
-              and(
-                eq(schema.appSettings.appId, appId),
-                eq(schema.appSettings.key, setting.key),
-              ),
-            );
-        } else {
-          await tx.insert(schema.appSettings).values({
-            appId,
-            key: setting.key,
-            value: setting.value,
-          });
-        }
-
-        // ← TAMBAH: log per setting di dalam transaksi
-        await this.auditService.log({
+    // 2. Satu upsert sekaligus (1 query)
+    await this.db
+      .insert(schema.appSettings)
+      .values(
+        dto.settings.map((s) => ({
           appId,
-          userId: userId ?? null,
-          action: AUDIT_ACTIONS.UPDATE_APP_SETTINGS,
-          entity: 'appSettings',
-          entityId: null,
-          before: beforeValue,
-          after: { key: setting.key, value: setting.value },
-          ipAddress: ipAddress ?? null,
-        });
-      }
+          key: s.key,
+          value: s.value,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [schema.appSettings.appId, schema.appSettings.key],
+        set: { value: sql`excluded.value` },
+      });
+
+    // 3. Audit sekali (1 log entry, bukan N)
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.UPDATE_APP_SETTINGS,
+      entity: 'appSettings',
+      entityId: null,
+      before: beforeMap,
+      after: Object.fromEntries(dto.settings.map((s) => [s.key, s.value])),
+      ipAddress: ipAddress ?? null,
     });
 
     return {
       message: `${dto.settings.length} settings successfully saved.`,
-      data: dto.settings.reduce<Record<string, unknown>>((acc, s) => {
-        acc[s.key] = s.value;
-        return acc;
-      }, {}),
+      data: Object.fromEntries(dto.settings.map((s) => [s.key, s.value])),
     };
   }
 

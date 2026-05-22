@@ -64,6 +64,34 @@
       "when": 1776921637335,
       "tag": "0008_tired_risque",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777045956048,
+      "tag": "0009_lethal_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777138538798,
+      "tag": "0010_far_ma_gnuci",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779359081403,
+      "tag": "0011_regular_thena",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1779408806386,
+      "tag": "0012_foamy_talisman",
+      "breakpoints": true
     }
   ]
 }

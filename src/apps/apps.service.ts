@@ -57,6 +57,12 @@ export class AppsService {
         status: JOIN_STATUS.ACTIVE,
       });
 
+      // ✅ seed default settings
+      await tx.insert(schema.appSettings).values([
+        { appId, key: 'order_prefix', value: 'ORD' },
+        { appId, key: 'tx_prefix', value: 'TRX' },
+      ]);
+
       return newApp[0];
     });
 

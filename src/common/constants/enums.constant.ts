@@ -47,6 +47,7 @@ export enum OrderStatus {
   IN_PROCESS = 'IN_PROCESS',
   READY = 'READY',
   DONE = 'DONE',
+  CANCELLED = 'CANCELLED',
 }
 
 export enum TransactionType {

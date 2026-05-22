@@ -10,6 +10,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenCleanupService } from './token-cleanup.service';
 import { AuditModule } from 'src/common/audit.module';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AuditModule } from 'src/common/audit.module';
     DualAuthGuard,
     AuthService,
     TokenCleanupService,
+    RolesGuard,
   ],
   exports: [JwtModule, ApiKeyGuard, DualAuthGuard, AuthService], // Export biar bisa dipakai di tempat lain
 })

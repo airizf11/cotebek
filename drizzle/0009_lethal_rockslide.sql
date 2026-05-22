@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD COLUMN "tx_number" varchar(50);

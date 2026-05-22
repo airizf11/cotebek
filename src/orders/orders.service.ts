@@ -19,13 +19,15 @@ import { eq, gte, lte, and, desc, count, sql } from 'drizzle-orm';
 import { paginate } from 'src/common/utils/paginate.util';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { PromosService } from 'src/promos/promos.service';
+import { generateDocNumber } from 'src/common/utils/doc-number.util';
 
 // Status transition rules
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  RECEIVED: ['IN_PROCESS'],
-  IN_PROCESS: ['READY'],
-  READY: ['DONE'],
+  RECEIVED: ['IN_PROCESS', 'CANCELLED'],
+  IN_PROCESS: ['READY', 'CANCELLED'],
+  READY: ['DONE', 'CANCELLED'], // ← opsional, tergantung bisnis rule
   DONE: [], // terminal — tidak bisa diubah lagi
+  CANCELLED: [], // terminal — tidak bisa diubah lagi
 };
 
 @Injectable()
@@ -43,6 +45,7 @@ export class OrdersService {
     handledBy?: string | null,
     ipAddress?: string | null,
   ) {
+    const orderNumber = await generateDocNumber(this.db, appId, 'order');
     try {
       let promoId: string | null = null;
       let discountAmount = 0;
@@ -77,7 +80,7 @@ export class OrdersService {
             appId,
             customerId: dto.customerId ?? null,
             handledBy: handledBy ?? null,
-            orderNumber: dto.orderNumber,
+            orderNumber,
             totalAmount: dto.totalAmount.toString(),
             totalCogs: dto.totalCogs.toString(),
             status: 'RECEIVED', // ✅ default RECEIVED, not PAID
@@ -112,7 +115,7 @@ export class OrdersService {
           category: 'SALES',
           amount: finalAmount.toString(),
           paymentMethod: dto.paymentMethod,
-          description: `Sales order #${dto.orderNumber}`,
+          description: `Sales for ${orderNumber}`,
           referenceId: orderId,
         });
 
@@ -143,7 +146,7 @@ export class OrdersService {
         action: AUDIT_ACTIONS.CREATE_ORDER,
         entity: 'orders',
         entityId: result.id,
-        after: { orderNumber: dto.orderNumber, totalAmount: dto.totalAmount },
+        after: { orderNumber, totalAmount: dto.totalAmount },
         ipAddress: ipAddress ?? null,
       });
 
@@ -332,7 +335,7 @@ export class OrdersService {
       .where(
         and(
           eq(schema.orders.appId, appId),
-          sql`${schema.orders.status} != 'DONE'`, // semua selain DONE
+          sql`${schema.orders.status} NOT IN ('DONE', 'CANCELLED')`, // semua selain DONE, Cancelled
         ),
       )
       .orderBy(schema.orders.dueDate); // ✅ urutkan by due date — yang mau jatuh tempo duluan

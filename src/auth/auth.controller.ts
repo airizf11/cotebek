@@ -12,12 +12,14 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ strict: { ttl: 60_000, limit: 10 } }) // ← max 10x per menit
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with email & password' })
@@ -27,6 +29,7 @@ export class AuthController {
     return this.authService.login(dto.email, dto.password, req.ip);
   }
 
+  @Throttle({ strict: { ttl: 60_000, limit: 20 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token using refresh token' })

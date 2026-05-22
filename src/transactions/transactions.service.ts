@@ -9,6 +9,7 @@ import { AuditService } from 'src/common/services/audit.service';
 import { AUDIT_ACTIONS } from 'src/common/constants/enums.constant';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { paginate } from 'src/common/utils/paginate.util';
+import { generateDocNumber } from 'src/common/utils/doc-number.util';
 
 @Injectable()
 export class TransactionsService {
@@ -23,6 +24,7 @@ export class TransactionsService {
     userId?: string | null,
     ipAddress?: string | null,
   ) {
+    const txNumber = await generateDocNumber(this.db, appId, 'transaction');
     // Insert data ke tabel transaksi ledger
     const newTx = await this.db
       .insert(schema.transactions)
@@ -33,6 +35,7 @@ export class TransactionsService {
         amount: dto.amount.toString(),
         paymentMethod: dto.paymentMethod,
         description: dto.description,
+        txNumber,
         metadata: dto.metadata, // Catatan JSON bebas
       })
       .returning();
@@ -44,7 +47,12 @@ export class TransactionsService {
       action: AUDIT_ACTIONS.CREATE_TRANSACTION,
       entity: 'transactions',
       entityId: newTx[0].id,
-      after: { type: dto.type, category: dto.category, amount: dto.amount },
+      after: {
+        txNumber,
+        type: dto.type,
+        category: dto.category,
+        amount: dto.amount,
+      },
       ipAddress: ipAddress ?? null,
     });
 

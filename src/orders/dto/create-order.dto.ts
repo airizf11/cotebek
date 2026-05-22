@@ -46,10 +46,6 @@ export class CreateOrderDto {
   @IsUUID()
   customerId?: string;
 
-  @IsString()
-  @MaxLength(100)
-  orderNumber: string;
-
   @IsNumber()
   @Min(0)
   totalAmount: number;

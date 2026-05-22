@@ -11,6 +11,7 @@ import {
   integer,
   primaryKey,
   text,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import type { AdapterAccount } from 'next-auth/adapters';
 
@@ -66,10 +67,12 @@ export const auditActionEnum = pgEnum('audit_action', [
 export const genderEnum = pgEnum('gender', ['MALE', 'FEMALE', 'OTHER']);
 
 export const orderStatusEnum = pgEnum('order_status', [
+  'PENDING', // ← baru: belum dikonfirmasi / belum dibayar
   'RECEIVED',
   'IN_PROCESS',
   'READY',
   'DONE',
+  'CANCELLED',
 ]);
 
 export const promoTypeEnum = pgEnum('promo_type', ['PERCENTAGE', 'NOMINAL']);
@@ -156,41 +159,6 @@ export const refreshTokens = pgTable('refresh_token', {
   }).defaultNow(),
 });
 
-/*
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  username: varchar('username', { length: 50 }).notNull().unique(),
-  displayName: varchar('display_name', { length: 255 }),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  emailVerified: timestamp('email_verified', { mode: 'date' }),
-  image: varchar('image', { length: 255 }),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
-  .defaultNow()
-  .$onUpdate(() => new Date()),
-});
-
-export const accounts = pgTable('accounts', {
-    userId: uuid('userId')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    type: varchar('type', { length: 255 }).notNull(),
-    provider: varchar('provider', { length: 255 }).notNull(),
-    providerAccountId: varchar('providerAccountId', { length: 255 }).notNull(),
-    refresh_token: varchar('refresh_token', { length: 255 }),
-    access_token: varchar('access_token', { length: 255 }),
-    expires_at: integer('expires_at'),
-    token_type: varchar('token_type', { length: 255 }),
-    scope: varchar('scope', { length: 255 }),
-    id_token: varchar('id_token', { length: 2048 }),
-    session_state: varchar('session_state', { length: 255 }),
-  },
-  (account) => ({
-    // Satu provider (misal google) dan ID account-nya jadi Primary Key gabungan
-    compoundKey: primaryKey({ columns: [account.provider, account.providerAccountId] }),
-  })
-); */
-
 export const apps = pgTable('apps', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
@@ -224,21 +192,30 @@ export const userApps = pgTable('user_apps', {
     .$onUpdate(() => new Date()),
 });
 
-export const appSettings = pgTable('app_settings', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  appId: uuid('app_id')
-    .references(() => apps.id, { onDelete: 'cascade' })
-    .notNull(),
-  key: varchar('key', { length: 100 }).notNull(),
-  value: jsonb('value').notNull(),
-  createdAt: timestamp('created_at', {
-    withTimezone: true,
-    mode: 'date',
-  }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-});
+export const appSettings = pgTable(
+  'app_settings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    appId: uuid('app_id')
+      .references(() => apps.id, { onDelete: 'cascade' })
+      .notNull(),
+    key: varchar('key', { length: 100 }).notNull(),
+    value: jsonb('value').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    appKeyUnique: uniqueIndex('app_settings_app_key_unique').on(
+      table.appId,
+      table.key,
+    ), // ← ini target conflict-nya
+  }),
+);
 
 export const items = pgTable('items', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -251,34 +228,6 @@ export const items = pgTable('items', {
   cogs: decimal('cogs', { precision: 15, scale: 2 }).default('0'),
   category: text('category'),
   isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at', {
-    withTimezone: true,
-    mode: 'date',
-  }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-});
-
-export const customers = pgTable('customers', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  appId: uuid('app_id')
-    .references(() => apps.id, { onDelete: 'cascade' })
-    .notNull(),
-  name: text('name').notNull(),
-  loyaltyPoints: integer('loyalty_points').default(0).notNull(),
-  phone: varchar('phone', { length: 20 }).notNull(),
-  email: text('email'),
-  gender: genderEnum('gender'),
-  birthDate: timestamp('birth_date', { mode: 'date' }),
-  addressDetail: text('address_detail'),
-  village: varchar('village', { length: 100 }),
-  district: varchar('district', { length: 100 }),
-  city: varchar('city', { length: 100 }),
-  province: varchar('province', { length: 100 }),
-  postalCode: varchar('postal_code', { length: 10 }),
-  notes: text('notes'),
-  tags: jsonb('tags').$type<string[]>(),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at', {
     withTimezone: true,
@@ -289,11 +238,53 @@ export const customers = pgTable('customers', {
     .$onUpdate(() => new Date()),
 });
 
+export const customers = pgTable(
+  'customers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    appId: uuid('app_id')
+      .references(() => apps.id, { onDelete: 'cascade' })
+      .notNull(),
+    userId: uuid('user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    name: text('name').notNull(),
+    loyaltyPoints: integer('loyalty_points').default(0).notNull(),
+    phone: varchar('phone', { length: 20 }).notNull(),
+    email: text('email'),
+    gender: genderEnum('gender'),
+    birthDate: timestamp('birth_date', { mode: 'date' }),
+    addressDetail: text('address_detail'),
+    village: varchar('village', { length: 100 }),
+    district: varchar('district', { length: 100 }),
+    city: varchar('city', { length: 100 }),
+    province: varchar('province', { length: 100 }),
+    postalCode: varchar('postal_code', { length: 10 }),
+    notes: text('notes'),
+    tags: jsonb('tags').$type<string[]>(),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    userAppUnique: uniqueIndex('customers_user_app_unique').on(
+      table.appId,
+      table.userId,
+    ),
+  }),
+);
+
 export const transactions = pgTable('transactions', {
   id: uuid('id').primaryKey().defaultRandom(),
   appId: uuid('app_id')
     .references(() => apps.id)
     .notNull(),
+  txNumber: varchar('tx_number', { length: 50 }),
   type: transactionTypeEnum('type').notNull(),
   category: txCategoryEnum('category').notNull(),
   amount: decimal('amount', { precision: 15, scale: 2 }).notNull(),
@@ -313,7 +304,7 @@ export const orders = pgTable('orders', {
     .references(() => apps.id)
     .notNull(),
   handledBy: uuid('handled_by').references(() => users.id),
-  customerId: uuid('customer_id').references(() => customers.id), // ✅ new
+  customerId: uuid('customer_id').references(() => customers.id),
   dueDate: timestamp('due_date', { withTimezone: true, mode: 'date' }),
   orderNumber: varchar('order_number', { length: 100 }).notNull(),
   totalAmount: decimal('total_amount', { precision: 15, scale: 2 }).notNull(),
@@ -419,3 +410,21 @@ export const promoUsages = pgTable('promo_usages', {
     mode: 'date',
   }).defaultNow(),
 });
+
+// 3. Tambah docCounters table — untuk sequential number per usaha per hari
+export const docCounters = pgTable(
+  'doc_counters',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    appId: uuid('app_id')
+      .references(() => apps.id, { onDelete: 'cascade' })
+      .notNull(),
+    prefix: varchar('prefix', { length: 20 }).notNull(), // 'ORD', 'TX', dll
+    date: varchar('date', { length: 10 }).notNull(), // '2026-04-26'
+    seq: integer('seq').default(1).notNull(),
+  },
+  (t) => ({
+    // Unique constraint: satu counter per (appId + prefix + date)
+    uniqCounter: uniqueIndex('uniq_doc_counter').on(t.appId, t.prefix, t.date),
+  }),
+);

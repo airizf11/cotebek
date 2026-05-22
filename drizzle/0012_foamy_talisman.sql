@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "app_settings_app_key_unique" ON "app_settings" USING btree ("app_id","key");
