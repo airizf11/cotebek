@@ -45,98 +45,101 @@ export class OrdersService {
     handledBy?: string | null,
     ipAddress?: string | null,
   ) {
+    const orderNumber = await generateDocNumber(this.db, appId, 'order');
     try {
-      const { order: result, orderNumber } = await this.db.transaction(
-        async (tx) => {
-          // doc number — sudah fix #1, tetap di sini
-          const orderNumber = await generateDocNumber(tx, appId, 'order');
+      let promoId: string | null = null;
+      let discountAmount = 0;
 
-          // Fix #2: promo validation dipindah ke DALAM transaction, pass tx
-          let promoId: string | null = null;
-          let discountAmount = 0;
+      if (dto.promoCode) {
+        // Ambil itemIds dari dto.items untuk validasi scope SPECIFIC_ITEMS
+        const itemIds = dto.items
+          .map((i) => i.itemId)
+          .filter(Boolean) as string[];
 
-          if (dto.promoCode) {
-            const itemIds = dto.items
-              .map((i) => i.itemId)
-              .filter(Boolean) as string[];
-            const { promo, discountAmount: discount } =
-              await this.promosService.validateAndGetPromo(
-                appId,
-                dto.promoCode,
-                dto.totalAmount,
-                dto.customerId ?? null,
-                itemIds,
-                tx, // ← pass tx biar lock-nya satu transaksi
-              );
-            promoId = promo.id;
-            discountAmount = discount;
-          }
-
-          const finalAmount = dto.totalAmount - discountAmount;
-
-          const newOrder = await tx
-            .insert(schema.orders)
-            .values({
-              appId,
-              customerId: dto.customerId ?? null,
-              handledBy: handledBy ?? null,
-              orderNumber,
-              totalAmount: dto.totalAmount.toString(),
-              totalCogs: dto.totalCogs.toString(),
-              status: 'RECEIVED',
-              dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-              metadata: dto.metadata,
-              promoId,
-              discountAmount: discountAmount.toString(),
-              finalAmount: finalAmount.toString(),
-              paymentMethod: dto.paymentMethod,
-            })
-            .returning();
-
-          const orderId = newOrder[0].id;
-
-          const itemsToInsert = dto.items.map((item) => ({
-            orderId,
-            itemId: item.itemId ?? null,
-            itemName: item.itemName,
-            qty: item.qty.toString(),
-            price: item.price.toString(),
-            cogs: item.cogs.toString(),
-            subtotal: item.subtotal.toString(),
-            metadata: item.metadata,
-          }));
-
-          await tx.insert(schema.orderItems).values(itemsToInsert);
-
-          await tx.insert(schema.transactions).values({
+        const { promo, discountAmount: discount } =
+          await this.promosService.validateAndGetPromo(
             appId,
-            type: 'IN',
-            category: 'SALES',
-            amount: finalAmount.toString(),
-            paymentMethod: dto.paymentMethod,
-            description: `Sales for ${orderNumber}`,
-            referenceId: orderId,
+            dto.promoCode,
+            dto.totalAmount,
+            dto.customerId ?? null,
+            itemIds,
+          );
+
+        promoId = promo.id;
+        discountAmount = discount;
+      }
+
+      const finalAmount = dto.totalAmount - discountAmount;
+      // Mulai Database Transaction (tx)
+      // Kalau salah satu gagal, semuanya otomatis di-Cancel (Rollback)
+      const result = await this.db.transaction(async (tx) => {
+        // 1. BUAT STRUK INDUK (Insert ke table orders)
+        const newOrder = await tx
+          .insert(schema.orders)
+          .values({
+            appId,
+            customerId: dto.customerId ?? null,
+            handledBy: handledBy ?? null,
+            orderNumber,
+            totalAmount: dto.totalAmount.toString(),
+            totalCogs: dto.totalCogs.toString(),
+            status: 'RECEIVED', // ✅ default RECEIVED, not PAID
+            dueDate: dto.dueDate ? new Date(dto.dueDate) : null, // ✅
+            metadata: dto.metadata,
+            promoId: promoId,
+            discountAmount: discountAmount.toString(),
+            finalAmount: finalAmount.toString(),
+          })
+          .returning();
+
+        const orderId = newOrder[0].id; // Ambil ID struk yang baru dibuat
+
+        // 2. MASUKKAN BARANG-BARANGNYA (Insert ke table order_items)
+        const itemsToInsert = dto.items.map((item) => ({
+          orderId,
+          itemId: item.itemId ?? null,
+          itemName: item.itemName,
+          qty: item.qty.toString(),
+          price: item.price.toString(),
+          cogs: item.cogs.toString(),
+          subtotal: item.subtotal.toString(),
+          metadata: item.metadata,
+        }));
+
+        await tx.insert(schema.orderItems).values(itemsToInsert);
+
+        // 3. OTOMATIS CATAT UANG MASUK KE BUKU KAS (Insert ke table transactions)
+        await tx.insert(schema.transactions).values({
+          appId,
+          type: 'IN',
+          category: 'SALES',
+          amount: finalAmount.toString(),
+          paymentMethod: dto.paymentMethod,
+          description: `Sales for ${orderNumber}`,
+          referenceId: orderId,
+        });
+
+        // Catat promo usage + increment usageCount jika ada promo
+        if (promoId) {
+          await tx.insert(schema.promoUsages).values({
+            appId,
+            promoId,
+            orderId,
+            customerId: dto.customerId ?? null,
+            discountAmount: discountAmount.toString(),
           });
 
-          if (promoId) {
-            await tx.insert(schema.promoUsages).values({
-              appId,
-              promoId,
-              orderId,
-              customerId: dto.customerId ?? null,
-              discountAmount: discountAmount.toString(),
-            });
+          await tx
+            .update(schema.promos)
+            .set({ usageCount: sql`${schema.promos.usageCount} + 1` })
+            .where(eq(schema.promos.id, promoId));
+        }
 
-            await tx
-              .update(schema.promos)
-              .set({ usageCount: sql`${schema.promos.usageCount} + 1` })
-              .where(eq(schema.promos.id, promoId));
-          }
+        // Kalau sukses semua, kembalikan data struknya
+        return newOrder[0];
+      });
 
-          return { order: newOrder[0], orderNumber };
-        },
-      );
-
+      // ✅ Log audit AFTER transaction commit
       await this.auditService.log({
         appId,
         userId: handledBy ?? null,
@@ -147,10 +150,17 @@ export class OrdersService {
         ipAddress: ipAddress ?? null,
       });
 
-      return { message: 'Order successfully recorded.', data: result };
+      return {
+        message: 'Order successfully recorded.',
+        data: result,
+      };
     } catch (error) {
-      if (error instanceof HttpException) throw error;
+      // Rethrow HttpException (4xx) as-is, jangan disamarkan jadi 500
+      if (error instanceof HttpException) {
+        throw error;
+      }
 
+      // Hanya log & wrap jika truly unexpected (DB error, network, dll)
       this.logger.error(
         'Order transaction failed, rollback executed',
         error instanceof Error ? error.stack : String(error),
@@ -188,8 +198,6 @@ export class OrdersService {
           id: schema.orders.id,
           orderNumber: schema.orders.orderNumber,
           totalAmount: schema.orders.totalAmount,
-          discountAmount: schema.orders.discountAmount,
-          finalAmount: schema.orders.finalAmount,
           status: schema.orders.status,
           dueDate: schema.orders.dueDate,
           paymentMethod: schema.orders.paymentMethod,
@@ -219,8 +227,6 @@ export class OrdersService {
     const formatted = orders.map((o) => ({
       ...o,
       totalAmount: Number(o.totalAmount),
-      discountAmount: Number(o.discountAmount),
-      finalAmount: Number(o.finalAmount),
     }));
 
     return {
@@ -231,34 +237,8 @@ export class OrdersService {
 
   async findOne(appId: string, id: string) {
     const order = await this.db
-      .select({
-        id: schema.orders.id,
-        orderNumber: schema.orders.orderNumber,
-        status: schema.orders.status,
-        totalAmount: schema.orders.totalAmount,
-        totalCogs: schema.orders.totalCogs,
-        discountAmount: schema.orders.discountAmount,
-        finalAmount: schema.orders.finalAmount,
-        paymentMethod: schema.orders.paymentMethod,
-        dueDate: schema.orders.dueDate,
-        metadata: schema.orders.metadata,
-        createdAt: schema.orders.createdAt,
-        customerId: schema.orders.customerId,
-        customerName: schema.customers.name,
-        customerPhone: schema.customers.phone,
-        handledBy: schema.orders.handledBy,
-        handledByName: schema.users.name,
-        promoId: schema.orders.promoId,
-        promoName: schema.promos.name,
-        promoCode: schema.promos.code,
-      })
+      .select()
       .from(schema.orders)
-      .leftJoin(
-        schema.customers,
-        eq(schema.orders.customerId, schema.customers.id),
-      )
-      .leftJoin(schema.users, eq(schema.orders.handledBy, schema.users.id))
-      .leftJoin(schema.promos, eq(schema.orders.promoId, schema.promos.id))
       .where(and(eq(schema.orders.id, id), eq(schema.orders.appId, appId)))
       .limit(1);
 
@@ -276,8 +256,6 @@ export class OrdersService {
         ...order[0],
         totalAmount: Number(order[0].totalAmount),
         totalCogs: Number(order[0].totalCogs),
-        discountAmount: Number(order[0].discountAmount),
-        finalAmount: Number(order[0].finalAmount),
         items: items.map((i) => ({
           ...i,
           qty: Number(i.qty),

@@ -9,6 +9,7 @@ import {
   MaxLength,
   IsUUID,
   IsDateString,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -55,6 +56,7 @@ export class CreateOrderDto {
   totalCogs: number;
 
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
   paymentMethod: string;
 

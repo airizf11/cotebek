@@ -1,5 +1,13 @@
 // cotebek/src/items/dto/update-item.dto.ts
-import { IsString, IsNumber, IsOptional, MinLength, MaxLength, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  MinLength,
+  MaxLength,
+  Min,
+  IsBoolean,
+} from 'class-validator';
 
 export class UpdateItemDto {
   @IsOptional()
@@ -27,4 +35,8 @@ export class UpdateItemDto {
   @IsString()
   @MaxLength(100)
   category?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

@@ -12,6 +12,7 @@ import {
   primaryKey,
   text,
   uniqueIndex,
+  index,
 } from 'drizzle-orm/pg-core';
 import type { AdapterAccount } from 'next-auth/adapters';
 
@@ -250,7 +251,7 @@ export const customers = pgTable(
     }),
     name: text('name').notNull(),
     loyaltyPoints: integer('loyalty_points').default(0).notNull(),
-    phone: varchar('phone', { length: 20 }).notNull(),
+    phone: varchar('phone', { length: 20 }),
     email: text('email'),
     gender: genderEnum('gender'),
     birthDate: timestamp('birth_date', { mode: 'date' }),
@@ -275,6 +276,10 @@ export const customers = pgTable(
     userAppUnique: uniqueIndex('customers_user_app_unique').on(
       table.appId,
       table.userId,
+    ),
+    appPhoneUnique: uniqueIndex('customers_app_phone_unique').on(
+      table.appId,
+      table.phone,
     ),
   }),
 );
@@ -349,6 +354,10 @@ export const auditLogs = pgTable('audit_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
   appId: uuid('app_id').references(() => apps.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').references(() => users.id), // nullable — ApiKey-only request tidak ada userId
+  actorType: varchar('actor_type', { length: 10 })
+    .$type<'HUMAN' | 'SYSTEM'>()
+    .notNull()
+    .default('SYSTEM'),
   action: auditActionEnum('action').notNull(),
   entity: varchar('entity', { length: 100 }).notNull(), // 'orders' | 'items' | 'userApps' | ...
   entityId: uuid('entity_id'), // id row yang terpengaruh
@@ -375,6 +384,7 @@ export const promos = pgTable('promos', {
   scope: promoScopeEnum('scope').default('ALL').notNull(),
   itemIds: jsonb('item_ids').$type<string[]>(), // nullable
   customerIds: jsonb('customer_ids').$type<string[]>(), // nullable
+  maxUsagePerCustomer: integer('max_usage_per_customer'), // null = no per-customer cap
   isActive: boolean('is_active').default(true).notNull(),
   startDate: timestamp('start_date', { withTimezone: true, mode: 'date' }),
   endDate: timestamp('end_date', { withTimezone: true, mode: 'date' }),
@@ -389,27 +399,36 @@ export const promos = pgTable('promos', {
     .$onUpdate(() => new Date()),
 });
 
-export const promoUsages = pgTable('promo_usages', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  appId: uuid('app_id')
-    .references(() => apps.id, { onDelete: 'cascade' })
-    .notNull(),
-  promoId: uuid('promo_id')
-    .references(() => promos.id)
-    .notNull(),
-  orderId: uuid('order_id')
-    .references(() => orders.id)
-    .notNull(),
-  customerId: uuid('customer_id').references(() => customers.id),
-  discountAmount: decimal('discount_amount', {
-    precision: 15,
-    scale: 2,
-  }).notNull(),
-  createdAt: timestamp('created_at', {
-    withTimezone: true,
-    mode: 'date',
-  }).defaultNow(),
-});
+export const promoUsages = pgTable(
+  'promo_usages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    appId: uuid('app_id')
+      .references(() => apps.id, { onDelete: 'cascade' })
+      .notNull(),
+    promoId: uuid('promo_id')
+      .references(() => promos.id)
+      .notNull(),
+    orderId: uuid('order_id')
+      .references(() => orders.id)
+      .notNull(),
+    customerId: uuid('customer_id').references(() => customers.id),
+    discountAmount: decimal('discount_amount', {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).defaultNow(),
+  },
+  (table) => ({
+    promoCustomerIdx: index('promo_usages_promo_customer_idx').on(
+      table.promoId,
+      table.customerId,
+    ),
+  }),
+);
 
 // 3. Tambah docCounters table — untuk sequential number per usaha per hari
 export const docCounters = pgTable(

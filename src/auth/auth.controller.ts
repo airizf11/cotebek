@@ -13,6 +13,7 @@ import { LogoutDto } from './dto/logout.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { Throttle } from '@nestjs/throttler';
+import { GoogleLoginDto } from './dto/google-login.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -27,6 +28,16 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials.' })
   login(@Req() req: any, @Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password, req.ip);
+  }
+
+  @Throttle({ strict: { ttl: 60_000, limit: 10 } })
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login or register using Google ID token' })
+  @ApiResponse({ status: 200, description: 'Login successful.' })
+  @ApiResponse({ status: 401, description: 'Invalid Google token.' })
+  loginWithGoogle(@Req() req: any, @Body() dto: GoogleLoginDto) {
+    return this.authService.loginWithGoogle(dto.idToken, req.ip);
   }
 
   @Throttle({ strict: { ttl: 60_000, limit: 20 } })

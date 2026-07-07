@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "customers_app_phone_unique" ON "customers" USING btree ("app_id","phone");

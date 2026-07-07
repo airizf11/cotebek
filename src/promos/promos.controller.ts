@@ -25,12 +25,16 @@ import {
   ApiOperation,
   ApiResponse,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
 
 @ApiTags('Promos')
 @ApiSecurity('ApiKey')
+@ApiBearerAuth('JWT')
 @Controller('promos')
-@UseGuards(ApiKeyGuard)
+@UseGuards(DualAuthGuard, RolesGuard)
 export class PromosController {
   constructor(private readonly promosService: PromosService) {}
 

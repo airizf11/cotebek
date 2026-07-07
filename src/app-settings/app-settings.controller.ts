@@ -14,13 +14,16 @@ import { UpsertSettingDto } from './dto/upsert-setting.dto';
 import { BulkUpsertSettingsDto } from './dto/bulk-upsert-settings.dto';
 import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
 
 @ApiTags('App Settings')
 @ApiSecurity('ApiKey')
+@ApiBearerAuth('JWT')
 @Controller('app-settings')
-@UseGuards(ApiKeyGuard)
+@UseGuards(DualAuthGuard, RolesGuard)
 export class AppSettingsController {
   constructor(private readonly appSettingsService: AppSettingsService) {}
 

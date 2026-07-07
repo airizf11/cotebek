@@ -10,15 +10,21 @@ import * as crypto from 'crypto';
 import { AuditService } from 'src/common/services/audit.service';
 import { AUDIT_ACTIONS } from 'src/common/constants/enums.constant';
 import * as bcrypt from 'bcrypt';
+import { OAuth2Client, TokenPayload } from 'google-auth-library';
 
 @Injectable()
 export class AuthService {
+  private googleClient: OAuth2Client;
   constructor(
     @Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>,
     private jwtService: JwtService,
     private config: ConfigService,
     private auditService: AuditService,
-  ) {}
+  ) {
+    this.googleClient = new OAuth2Client(
+      this.config.get<string>('GOOGLE_CLIENT_ID'),
+    );
+  }
 
   // ─── Generate token pair ───────────────────────────────────────────
   generateAccessToken(payload: { sub: string; email: string; role?: string }) {
@@ -157,6 +163,102 @@ export class AuthService {
       entityId: user.id,
       before: null,
       after: { success: true },
+      ipAddress: ipAddress ?? null,
+    });
+
+    return {
+      message: 'Login successful.',
+      data: { accessToken, refreshToken },
+    };
+  }
+
+  async loginWithGoogle(idToken: string, ipAddress?: string | null) {
+    let payload: TokenPayload | undefined;
+
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken,
+        audience: this.config.get<string>('GOOGLE_CLIENT_ID'),
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Invalid Google token.');
+    }
+
+    if (!payload?.email || !payload.sub) {
+      throw new UnauthorizedException('Invalid Google token payload.');
+    }
+
+    if (!payload.email_verified) {
+      throw new UnauthorizedException('Google email is not verified.');
+    }
+
+    const googleSub = payload.sub;
+    const email = payload.email;
+
+    // 1. Cek apakah akun Google ini sudah pernah dipakai login sebelumnya
+    const linkedAccount = await this.db
+      .select({ userId: schema.accounts.userId })
+      .from(schema.accounts)
+      .where(
+        and(
+          eq(schema.accounts.provider, 'google'),
+          eq(schema.accounts.providerAccountId, googleSub),
+        ),
+      )
+      .limit(1);
+
+    let userId: string;
+
+    if (linkedAccount[0]) {
+      userId = linkedAccount[0].userId;
+    } else {
+      // 2. Belum pernah — cek apakah user dengan email ini sudah ada
+      //    (misal dulu daftar manual, sekarang link akun Google)
+      const existingUser = await this.db
+        .select({ id: schema.users.id })
+        .from(schema.users)
+        .where(eq(schema.users.email, email))
+        .limit(1);
+
+      if (existingUser[0]) {
+        userId = existingUser[0].id;
+      } else {
+        // 3. User baru sepenuhnya
+        const newUser = await this.db
+          .insert(schema.users)
+          .values({
+            email,
+            name: payload.name ?? null,
+            image: payload.picture ?? null,
+            emailVerified: new Date(),
+          })
+          .returning({ id: schema.users.id });
+
+        userId = newUser[0].id;
+      }
+
+      // Link akun Google ke user (baru atau existing)
+      await this.db.insert(schema.accounts).values({
+        userId,
+        type: 'oidc',
+        provider: 'google',
+        providerAccountId: googleSub,
+      });
+    }
+
+    const accessToken = this.generateAccessToken({ sub: userId, email });
+    const refreshToken = this.generateRefreshToken();
+    await this.saveRefreshToken(userId, refreshToken);
+
+    await this.auditService.log({
+      appId: null,
+      userId,
+      action: AUDIT_ACTIONS.USER_LOGIN,
+      entity: 'users',
+      entityId: userId,
+      before: null,
+      after: { success: true, method: 'google' },
       ipAddress: ipAddress ?? null,
     });
 

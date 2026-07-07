@@ -24,36 +24,29 @@ export class TransactionsService {
     userId?: string | null,
     ipAddress?: string | null,
   ) {
-    // Membungkus generate nomor dokumen dan insert ke dalam satu transaksi database
-    const { record: newTx, txNumber } = await this.db.transaction(
-      async (tx) => {
-        const txNumber = await generateDocNumber(tx, appId, 'transaction');
+    const txNumber = await generateDocNumber(this.db, appId, 'transaction');
+    // Insert data ke tabel transaksi ledger
+    const newTx = await this.db
+      .insert(schema.transactions)
+      .values({
+        appId: appId, // ID usahanya otomatis dari API Key! Gak bisa dipalsukan.
+        type: dto.type,
+        category: dto.category, // 'SALES', 'EXPENSE', dll
+        amount: dto.amount.toString(),
+        paymentMethod: dto.paymentMethod,
+        description: dto.description,
+        txNumber,
+        metadata: dto.metadata, // Catatan JSON bebas
+      })
+      .returning();
 
-        const inserted = await tx
-          .insert(schema.transactions)
-          .values({
-            appId, // ID usahanya otomatis dari API Key! Gak bisa dipalsukan.
-            type: dto.type,
-            category: dto.category, // 'SALES', 'EXPENSE', dll
-            amount: dto.amount.toString(),
-            paymentMethod: dto.paymentMethod,
-            description: dto.description,
-            txNumber,
-            metadata: dto.metadata, // Catatan JSON bebas
-          })
-          .returning();
-
-        return { record: inserted[0], txNumber };
-      },
-    );
-
-    // Audit log dijalankan di luar transaksi setelah data dipastikan aman tersimpan
     await this.auditService.log({
+      // ✅
       appId,
       userId: userId ?? null,
       action: AUDIT_ACTIONS.CREATE_TRANSACTION,
       entity: 'transactions',
-      entityId: newTx.id,
+      entityId: newTx[0].id,
       after: {
         txNumber,
         type: dto.type,
@@ -65,7 +58,7 @@ export class TransactionsService {
 
     return {
       message: 'Transaction successfully recorded.',
-      data: newTx,
+      data: newTx[0],
       amount: dto.amount.toString(),
     };
   }
@@ -107,7 +100,7 @@ export class TransactionsService {
         .from(schema.transactions)
         .where(and(...filters)),
 
-      // Query 3: SQL SUM GROUP BY — efisien tanpa full-table fetch
+      // ✅ Query 3 FIXED: SQL SUM GROUP BY — no more full-table fetch
       this.db
         .select({
           type: schema.transactions.type,
@@ -123,7 +116,7 @@ export class TransactionsService {
       amount: Number(tx.amount),
     }));
 
-    // Build summary dari maksimal 2 baris (IN/OUT)
+    // ✅ Build summary from 2 rows max (IN/OUT), not from looping thousands of records
     let totalIn = 0;
     let totalOut = 0;
     summaryRows.forEach((row) => {

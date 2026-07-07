@@ -54,26 +54,29 @@ export class ItemsService {
     return { message: 'Item successfully added.', data: newItem[0] };
   }
 
-  async findAll(appId: string, pagination: PaginationDto) {
+  async findAll(
+    appId: string,
+    pagination: PaginationDto,
+    includeInactive?: boolean,
+  ) {
     // ✅ tambah param
     const { page = 1, limit = 20, offset } = pagination;
+
+    const baseFilters = [eq(schema.items.appId, appId)];
+    if (!includeInactive) baseFilters.push(eq(schema.items.isActive, true));
 
     const [items, [{ total }]] = await Promise.all([
       this.db
         .select()
         .from(schema.items)
-        .where(
-          and(eq(schema.items.appId, appId), eq(schema.items.isActive, true)),
-        )
+        .where(and(...baseFilters))
         .limit(limit)
         .offset(offset),
 
       this.db
         .select({ total: count() })
         .from(schema.items)
-        .where(
-          and(eq(schema.items.appId, appId), eq(schema.items.isActive, true)),
-        ),
+        .where(and(...baseFilters)),
     ]);
 
     const formatted = items.map((item) => ({
@@ -120,6 +123,7 @@ export class ItemsService {
     if (dto.price !== undefined) updateData.price = dto.price.toString();
     if (dto.cogs !== undefined) updateData.cogs = dto.cogs.toString();
     if (dto.category !== undefined) updateData.category = dto.category;
+    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
     if (Object.keys(updateData).length === 0) {
       throw new BadRequestException('No fields to update.');

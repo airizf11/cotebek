@@ -19,6 +19,7 @@ export class CreateCustomerDto {
   name: string;
 
   @IsString()
+  @IsOptional()
   @Matches(/^(\+62|62|0)8[1-9][0-9]{6,10}$/, {
     message: 'Invalid Indonesian phone number format.',
   })

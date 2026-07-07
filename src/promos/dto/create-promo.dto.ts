@@ -71,4 +71,9 @@ export class CreatePromoDto {
   @IsInt()
   @Min(1)
   usageLimit?: number; // null = unlimited
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxUsagePerCustomer?: number;
 }

@@ -21,14 +21,20 @@ import {
   ApiSecurity,
   ApiTags,
   ApiOperation,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { QueryItemDto } from './dto/query-item.dto';
 
 @ApiTags('Items')
 @ApiSecurity('ApiKey')
+@ApiBearerAuth('JWT')
 @Controller('items')
-@UseGuards(ApiKeyGuard) // <-- Wajib Pasang Satpam!
+// @UseGuards(ApiKeyGuard)
+@UseGuards(DualAuthGuard, RolesGuard) // <-- Wajib Pasang Satpam!
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}
 
@@ -45,8 +51,12 @@ export class ItemsController {
   @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get all active items' })
   @ApiResponse({ status: 200, description: 'Item list retrieved.' })
-  findAll(@Req() req: any, @Query() pagination: PaginationDto) {
-    return this.itemsService.findAll(req.appInfo.id, pagination);
+  findAll(@Req() req: any, @Query() query: QueryItemDto) {
+    return this.itemsService.findAll(
+      req.appInfo.id,
+      query,
+      query.includeInactive === 'true',
+    );
   }
 
   @Get(':id')

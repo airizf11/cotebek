@@ -34,6 +34,6 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
     TokenCleanupService,
     RolesGuard,
   ],
-  exports: [JwtModule, ApiKeyGuard, DualAuthGuard, AuthService], // Export biar bisa dipakai di tempat lain
+  exports: [JwtModule, ApiKeyGuard, DualAuthGuard, AuthService, RolesGuard], // Export biar bisa dipakai di tempat lain
 })
 export class AuthModule {}

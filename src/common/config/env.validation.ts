@@ -14,6 +14,9 @@ export const envValidationSchema = Joi.object({
   // JWT
   JWT_SECRET: Joi.string().min(32).required(),
 
+  // Google OAuth
+  GOOGLE_CLIENT_ID: Joi.string().required(),
+
   // CORS (optional — defaults to *)
   ALLOWED_ORIGINS: Joi.string().optional(),
 

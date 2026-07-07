@@ -30,43 +30,55 @@ export class CustomersService {
     userId?: string | null,
     ipAddress?: string | null,
   ) {
-    // Check duplicate phone per appId
-    const existing = await this.db
-      .select()
-      .from(schema.customers)
-      .where(
-        and(
-          eq(schema.customers.appId, appId),
-          eq(schema.customers.phone, dto.phone),
-        ),
-      )
-      .limit(1);
+    if (dto.phone) {
+      // Check duplicate phone per appId
+      const existing = await this.db
+        .select()
+        .from(schema.customers)
+        .where(
+          and(
+            eq(schema.customers.appId, appId),
+            eq(schema.customers.phone, dto.phone),
+          ),
+        )
+        .limit(1);
 
-    if (existing[0]) {
-      throw new ConflictException(
-        `Customer with phone ${dto.phone} already exists.`,
-      );
+      if (existing[0]) {
+        throw new ConflictException(
+          `Customer with phone ${dto.phone} already exists.`,
+        );
+      }
     }
 
-    const newCustomer = await this.db
-      .insert(schema.customers)
-      .values({
-        appId,
-        name: dto.name,
-        phone: dto.phone,
-        email: dto.email,
-        gender: dto.gender,
-        birthDate: dto.birthDate,
-        addressDetail: dto.addressDetail,
-        village: dto.village,
-        district: dto.district,
-        city: dto.city,
-        province: dto.province,
-        postalCode: dto.postalCode,
-        notes: dto.notes,
-        tags: dto.tags ?? [],
-      })
-      .returning();
+    let newCustomer;
+    try {
+      newCustomer = await this.db
+        .insert(schema.customers)
+        .values({
+          appId,
+          name: dto.name,
+          phone: dto.phone ?? null,
+          email: dto.email,
+          gender: dto.gender,
+          birthDate: dto.birthDate,
+          addressDetail: dto.addressDetail,
+          village: dto.village,
+          district: dto.district,
+          city: dto.city,
+          province: dto.province,
+          postalCode: dto.postalCode,
+          notes: dto.notes,
+          tags: dto.tags ?? [],
+        })
+        .returning();
+    } catch (err: any) {
+      if (err.code === '23505') {
+        throw new ConflictException(
+          `Customer with phone ${dto.phone} already exists.`,
+        );
+      }
+      throw err;
+    }
 
     await this.auditService.log({
       appId,
@@ -251,5 +263,45 @@ export class CustomersService {
     if (!customer[0]) throw new NotFoundException('Customer not found.');
 
     return { message: 'Customer found.', data: customer[0] };
+  }
+
+  async remove(
+    appId: string,
+    id: string,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
+    const existing = await this.findOne(appId, id);
+
+    try {
+      const deleted = await this.db
+        .delete(schema.customers)
+        .where(
+          and(eq(schema.customers.id, id), eq(schema.customers.appId, appId)),
+        )
+        .returning();
+
+      if (!deleted[0]) throw new NotFoundException('Customer not found.');
+
+      await this.auditService.log({
+        appId,
+        userId: userId ?? null,
+        action: AUDIT_ACTIONS.DELETE_CUSTOMER,
+        entity: 'customers',
+        entityId: id,
+        before: existing.data as Record<string, unknown>,
+        after: null,
+        ipAddress: ipAddress ?? null,
+      });
+
+      return { message: 'Customer successfully deleted.' };
+    } catch (err: any) {
+      if (err.code === '23503') {
+        throw new ConflictException(
+          'Customer ini masih punya riwayat order, tidak bisa dihapus.',
+        );
+      }
+      throw err;
+    }
   }
 }

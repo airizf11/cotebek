@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Req,
+  Delete,
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -16,13 +17,16 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
+import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @ApiTags('Customers')
 @ApiSecurity('ApiKey')
+@ApiBearerAuth('JWT')
 @Controller('customers')
-@UseGuards(ApiKeyGuard)
+@UseGuards(DualAuthGuard, RolesGuard)
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
@@ -66,6 +70,17 @@ export class CustomersController {
       req.appInfo.id,
       id,
       dto,
+      req.user?.id,
+      req.ip,
+    );
+  }
+
+  @Delete(':id')
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  remove(@Req() req: any, @Param('id') id: string) {
+    return this.customersService.remove(
+      req.appInfo.id,
+      id,
       req.user?.id,
       req.ip,
     );

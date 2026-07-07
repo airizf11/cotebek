@@ -8,3 +8,4 @@ dist
 .gitignore
 README.md
 docker-compose*.yml
+test*.http

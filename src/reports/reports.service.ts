@@ -34,7 +34,7 @@ export class ReportsService {
 
     const result = await this.db
       .select({
-        totalRevenue: sum(schema.orders.totalAmount),
+        totalRevenue: sum(schema.orders.finalAmount),
         totalCogs: sum(schema.orders.totalCogs),
         totalOrders: count(schema.orders.id),
       })
@@ -183,7 +183,7 @@ export class ReportsService {
         ),
 
       this.db
-        .select({ total: sum(schema.orders.totalAmount) })
+        .select({ total: sum(schema.orders.finalAmount) })
         .from(schema.orders)
         .where(
           and(
@@ -199,7 +199,7 @@ export class ReportsService {
         .where(
           and(
             eq(schema.orders.appId, appId),
-            sql`${schema.orders.status} != 'DONE'`,
+            sql`${schema.orders.status} NOT IN ('DONE', 'CANCELLED')`,
           ),
         ),
 
@@ -209,7 +209,7 @@ export class ReportsService {
         .where(eq(schema.orders.appId, appId)),
 
       this.db
-        .select({ total: sum(schema.orders.totalAmount) })
+        .select({ total: sum(schema.orders.finalAmount) })
         .from(schema.orders)
         .where(eq(schema.orders.appId, appId)),
 

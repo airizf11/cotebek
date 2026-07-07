@@ -3,13 +3,16 @@ import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
 
 @ApiTags('Reports')
 @ApiSecurity('ApiKey')
+@ApiBearerAuth('JWT')
 @Controller('reports')
-@UseGuards(ApiKeyGuard) // Selalu amankan API-mu!
+@UseGuards(DualAuthGuard, RolesGuard) // Selalu amankan API-mu!
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 

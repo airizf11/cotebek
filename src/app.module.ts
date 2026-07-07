@@ -19,6 +19,7 @@ import { ConfigModule } from '@nestjs/config';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PromosModule } from './promos/promos.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AuditLogsModule } from './common/audit-logs.module';
 
 @Module({
   imports: [
@@ -32,8 +33,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     ThrottlerModule.forRoot([
       {
         name: 'default',
-        ttl: 60_000, // 60 seconds window
-        limit: 100, // 100 requests per window (global)
+        ttl: 63_000, // 60 seconds window
+        limit: 2048, // 100 requests per window (global)
       },
       {
         name: 'strict',
@@ -53,6 +54,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     CustomersModule,
     AppSettingsModule,
     PromosModule,
+    AuditLogsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -61,10 +63,10 @@ import { ScheduleModule } from '@nestjs/schedule';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    {
+    /* {
       provide: APP_GUARD,
       useClass: RolesGuard,
-    },
+    }, */
   ],
 })
 export class AppModule {}

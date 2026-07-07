@@ -18,13 +18,18 @@ import {
   ApiSecurity,
   ApiTags,
   ApiOperation,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
+import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @ApiTags('Transactions')
 @ApiSecurity('ApiKey')
+@ApiBearerAuth('JWT')
 @Controller('transactions')
-@UseGuards(ApiKeyGuard) // <-- Pasang satpam di seluruh endpoint transaksi!
+// @UseGuards(ApiKeyGuard) // <-- Pasang satpam di seluruh endpoint transaksi!
+@UseGuards(DualAuthGuard, RolesGuard)
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 

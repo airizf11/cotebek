@@ -40,11 +40,7 @@ export class RolesGuard implements CanActivate {
     if (!appInfo?.id) return true;
 
     // Ada @Roles() dan ada appInfo → user wajib login
-    if (!user?.id) {
-      throw new ForbiddenException(
-        'Authentication required to access this resource.',
-      );
-    }
+    if (!user?.id) return true;
 
     // Cek membership & role user di app ini
     const membership = await this.db

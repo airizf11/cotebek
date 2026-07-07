@@ -21,11 +21,6 @@ import {
 } from 'src/common/constants/enums.constant';
 import { AuditService } from 'src/common/services/audit.service';
 
-// Tipe yang mencakup both this.db dan tx dari dalam db.transaction()
-type DbOrTx =
-  | NodePgDatabase<typeof schema>
-  | Parameters<Parameters<NodePgDatabase<typeof schema>['transaction']>[0]>[0];
-
 @Injectable()
 export class PromosService {
   constructor(
@@ -33,6 +28,7 @@ export class PromosService {
     private auditService: AuditService,
   ) {}
 
+  // ─── Private: Hitung Diskon ────────────────────────────────────────
   calculateDiscount(
     type: PromoType,
     value: number,
@@ -42,27 +38,26 @@ export class PromosService {
     let discount = 0;
 
     if (type === PromoType.NOMINAL) {
-      discount = Math.min(value, orderAmount);
+      discount = Math.min(value, orderAmount); // tidak boleh lebih dari total order
     } else {
       discount = (orderAmount * value) / 100;
       if (maxDiscount) discount = Math.min(discount, maxDiscount);
     }
 
-    return Math.round(discount);
+    return Math.round(discount); // bulatkan ke integer rupiah
   }
 
+  // ─── Private: Validasi & Ambil Promo ──────────────────────────────
   async validateAndGetPromo(
     appId: string,
     code: string,
     orderAmount: number,
     customerId?: string | null,
     itemIds?: string[],
-    tx?: DbOrTx, // ← baru: optional, dipakai saat dipanggil dari dalam db.transaction()
   ) {
-    const db = tx ?? this.db; // pakai tx kalau ada, fallback ke this.db
     const now = new Date();
 
-    const promo = await db
+    const promo = await this.db
       .select()
       .from(schema.promos)
       .where(
@@ -79,42 +74,23 @@ export class PromosService {
 
     const p = promo[0];
 
+    // Cek tanggal validitas
     if (p.startDate && now < p.startDate)
       throw new BadRequestException('Promo is not yet active.');
     if (p.endDate && now > p.endDate)
       throw new BadRequestException('Promo has expired.');
 
+    // Cek usage limit
     if (p.usageLimit !== null && p.usageCount >= p.usageLimit)
       throw new BadRequestException('Promo usage limit has been reached.');
 
-    // Fix #3: per-customer usage check
-    if (p.maxUsagePerCustomer !== null) {
-      if (!customerId)
-        throw new BadRequestException(
-          'This promo requires a customer to be specified.',
-        );
-
-      const [{ total }] = await db
-        .select({ total: count() })
-        .from(schema.promoUsages)
-        .where(
-          and(
-            eq(schema.promoUsages.promoId, p.id),
-            eq(schema.promoUsages.customerId, customerId),
-          ),
-        );
-
-      if (Number(total) >= p.maxUsagePerCustomer)
-        throw new BadRequestException(
-          'You have reached the usage limit for this promo.',
-        );
-    }
-
+    // Cek minimum order
     if (p.minOrder && orderAmount < Number(p.minOrder))
       throw new BadRequestException(
         `Minimum order amount for this promo is Rp${Number(p.minOrder).toLocaleString('id-ID')}.`,
       );
 
+    // Cek scope
     if (p.scope === PromoScope.SPECIFIC_CUSTOMERS) {
       if (!customerId || !(p.customerIds as string[])?.includes(customerId))
         throw new BadRequestException(
@@ -221,16 +197,9 @@ export class PromosService {
         .where(eq(schema.promos.appId, appId)),
     ]);
 
-    const formatted = promos.map((p) => ({
-      ...p,
-      value: Number(p.value),
-      minOrder: p.minOrder !== null ? Number(p.minOrder) : null,
-      maxDiscount: p.maxDiscount !== null ? Number(p.maxDiscount) : null,
-    }));
-
     return {
       message: 'Promo list successfully retrieved.',
-      ...paginate(formatted, Number(total[0].total), page, limit),
+      ...paginate(promos, Number(total[0].total), page, limit),
     };
   }
 
@@ -243,16 +212,7 @@ export class PromosService {
 
     if (!promo[0]) throw new NotFoundException('Promo not found.');
 
-    return {
-      message: 'Promo detail successfully retrieved.',
-      data: {
-        ...promo[0],
-        value: Number(promo[0].value),
-        minOrder: promo[0].minOrder !== null ? Number(promo[0].minOrder) : null,
-        maxDiscount:
-          promo[0].maxDiscount !== null ? Number(promo[0].maxDiscount) : null,
-      },
-    };
+    return { message: 'Promo detail successfully retrieved.', data: promo[0] };
   }
 
   async update(
