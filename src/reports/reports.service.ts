@@ -3,7 +3,18 @@ import { Inject, Injectable } from '@nestjs/common';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../database/schema';
-import { eq, and, gte, lte, sum, count, desc, sql, SQL } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  gte,
+  lte,
+  sum,
+  count,
+  desc,
+  sql,
+  isNotNull,
+  SQL,
+} from 'drizzle-orm';
 
 @Injectable()
 export class ReportsService {
@@ -94,7 +105,7 @@ export class ReportsService {
     const result = await this.db
       .select({
         date: dateFormatted,
-        revenue: sum(schema.orders.totalAmount),
+        revenue: sum(schema.orders.finalAmount),
         cogs: sum(schema.orders.totalCogs),
       })
       .from(schema.orders)
@@ -228,6 +239,43 @@ export class ReportsService {
         totalOrders: totalOrders[0]?.count ?? 0,
         totalRevenue: Number(totalRevenue[0]?.total ?? 0),
         totalCustomers: totalCustomers[0]?.count ?? 0,
+      },
+    };
+  }
+
+  async getPromoBudget(appId: string, startDate?: string, endDate?: string) {
+    const baseFilters = [
+      eq(schema.orders.appId, appId),
+      ...this.buildDateFilters(schema.orders.createdAt, startDate, endDate),
+    ];
+
+    const [totals, promoOnly] = await Promise.all([
+      this.db
+        .select({
+          totalDiscount: sum(schema.orders.discountAmount),
+          grossAmount: sum(schema.orders.totalAmount),
+        })
+        .from(schema.orders)
+        .where(and(...baseFilters)),
+
+      this.db
+        .select({ ordersWithPromo: count(schema.orders.id) })
+        .from(schema.orders)
+        .where(and(...baseFilters, isNotNull(schema.orders.promoId))),
+    ]);
+
+    const totalDiscount = Number(totals[0].totalDiscount || 0);
+    const grossAmount = Number(totals[0].grossAmount || 0);
+
+    return {
+      message: 'Promo budget summary successfully retrieved.',
+      data: {
+        totalDiscount,
+        ordersWithPromo: Number(promoOnly[0].ordersWithPromo || 0),
+        discountPercentage:
+          grossAmount === 0
+            ? '0.0%'
+            : ((totalDiscount / grossAmount) * 100).toFixed(1) + '%',
       },
     };
   }

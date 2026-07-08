@@ -1,7 +1,6 @@
 // cotebek/src/reports/reports.controller.ts
 import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { ReportsService } from './reports.service';
-import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
@@ -27,6 +26,17 @@ export class ReportsController {
     const appId = request.appInfo.id;
 
     return this.reportsService.getSummary(appId, startDate, endDate);
+  }
+
+  @Get('promo-budget')
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  getPromoBudget(
+    @Req() request: any,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const appId = request.appInfo.id;
+    return this.reportsService.getPromoBudget(appId, startDate, endDate);
   }
 
   @Get('top-items')

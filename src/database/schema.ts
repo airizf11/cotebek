@@ -23,6 +23,8 @@ export const txCategoryEnum = pgEnum('transaction_category', [
   'FUND_IN',
   'FUND_OUT',
   'OTHER',
+  'ADJUSTMENT',
+  'CAPEX',
 ]);
 export const appRoleEnum = pgEnum('user_role', [
   'DEV',

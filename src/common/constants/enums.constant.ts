@@ -61,6 +61,8 @@ export enum TransactionCategory {
   FUND_IN = 'FUND_IN',
   FUND_OUT = 'FUND_OUT',
   OTHER = 'OTHER',
+  ADJUSTMENT = 'ADJUSTMENT',
+  CAPEX = 'CAPEX',
 }
 
 export enum Gender {

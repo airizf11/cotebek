@@ -314,11 +314,31 @@ export class OrdersService {
       );
     }
 
-    const updated = await this.db
-      .update(schema.orders)
-      .set({ status: dto.status })
-      .where(and(eq(schema.orders.id, id), eq(schema.orders.appId, appId)))
-      .returning();
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(schema.orders)
+        .set({ status: dto.status })
+        .where(and(eq(schema.orders.id, id), eq(schema.orders.appId, appId)));
+
+      // Order dibatalkan & sempet ada duit masuk (finalAmount > 0) →
+      // bikin entri pembalik biar ledger tetep akurat, gak diam-diam bolong.
+      const finalAmount = order[0].finalAmount;
+      if (
+        dto.status === 'CANCELLED' &&
+        finalAmount !== null &&
+        Number(finalAmount) > 0
+      ) {
+        await tx.insert(schema.transactions).values({
+          appId,
+          type: 'OUT',
+          category: 'ADJUSTMENT',
+          amount: finalAmount,
+          paymentMethod: order[0].paymentMethod,
+          description: `Cancelled of Order ${order[0].orderNumber}`,
+          referenceId: id,
+        });
+      }
+    });
 
     await this.auditService.log({
       appId,
@@ -343,6 +363,7 @@ export class OrdersService {
         id: schema.orders.id,
         orderNumber: schema.orders.orderNumber,
         totalAmount: schema.orders.totalAmount,
+        finalAmount: schema.orders.finalAmount,
         status: schema.orders.status,
         dueDate: schema.orders.dueDate,
         customerName: schema.customers.name,
