@@ -15,7 +15,6 @@ import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
-import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
@@ -31,7 +30,7 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   create(@Req() req: any, @Body() dto: CreateCustomerDto) {
     return this.customersService.create(
       req.appInfo.id,
@@ -60,7 +59,7 @@ export class CustomersController {
   }
 
   @Put(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   update(
     @Req() req: any,
     @Param('id') id: string,
@@ -76,7 +75,7 @@ export class CustomersController {
   }
 
   @Delete(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   remove(@Req() req: any, @Param('id') id: string) {
     return this.customersService.remove(
       req.appInfo.id,

@@ -31,11 +31,11 @@ import { AuditLogsModule } from './common/audit-logs.module';
       },
     }),
     ThrottlerModule.forRoot([
-      /* {
+      {
         name: 'default',
-        ttl: 30_000, // 60 seconds window
+        ttl: 10_000, // 60 seconds window
         limit: 10480, // 100 requests per window (global)
-      }, */
+      },
       {
         name: 'strict',
         ttl: 60_000,

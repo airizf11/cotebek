@@ -14,8 +14,6 @@ import {
 import { ItemsService } from './items.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
-import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 import {
   ApiResponse,
   ApiSecurity,
@@ -33,7 +31,6 @@ import { QueryItemDto } from './dto/query-item.dto';
 @ApiSecurity('ApiKey')
 @ApiBearerAuth('JWT')
 @Controller('items')
-// @UseGuards(ApiKeyGuard)
 @UseGuards(DualAuthGuard, RolesGuard) // <-- Wajib Pasang Satpam!
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}

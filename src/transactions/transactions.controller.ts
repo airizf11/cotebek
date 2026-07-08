@@ -28,7 +28,6 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 @ApiSecurity('ApiKey')
 @ApiBearerAuth('JWT')
 @Controller('transactions')
-// @UseGuards(ApiKeyGuard) // <-- Pasang satpam di seluruh endpoint transaksi!
 @UseGuards(DualAuthGuard, RolesGuard)
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}

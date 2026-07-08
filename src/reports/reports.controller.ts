@@ -40,7 +40,7 @@ export class ReportsController {
   }
 
   @Get('top-items')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   getTopItems(
     @Req() request: any,
     @Query('startDate') startDate?: string,
@@ -52,7 +52,7 @@ export class ReportsController {
 
   // --- SALES TREND (Grafik Garis) ---
   @Get('sales-trend')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   getSalesTrend(
     @Req() request: any,
     @Query('startDate') startDate?: string,
@@ -64,7 +64,7 @@ export class ReportsController {
 
   // --- PAYMENT METHODS (Grafik Lingkaran) ---
   @Get('payment-methods')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   getPaymentMethods(
     @Req() request: any,
     @Query('startDate') startDate?: string,
