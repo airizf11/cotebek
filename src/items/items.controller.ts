@@ -26,11 +26,13 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { QueryItemDto } from './dto/query-item.dto';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Items')
 @ApiSecurity('ApiKey')
 @ApiBearerAuth('JWT')
 @Controller('items')
+@SkipThrottle({ strict: true })
 @UseGuards(DualAuthGuard, RolesGuard) // <-- Wajib Pasang Satpam!
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}

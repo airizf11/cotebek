@@ -247,6 +247,25 @@ export class AuthService {
       });
     }
 
+    // Tempelin undangan yang nunggu (kalau ada) — Owner invite duluan
+    // sebelum orangnya sempet login pertama kali
+    const pendingInvites = await this.db
+      .select()
+      .from(schema.appInvites)
+      .where(eq(schema.appInvites.email, email));
+
+    for (const invite of pendingInvites) {
+      await this.db.insert(schema.userApps).values({
+        userId,
+        appId: invite.appId,
+        role: invite.role,
+        status: 'ACTIVE',
+      });
+      await this.db
+        .delete(schema.appInvites)
+        .where(eq(schema.appInvites.id, invite.id));
+    }
+
     const accessToken = this.generateAccessToken({ sub: userId, email });
     const refreshToken = this.generateRefreshToken();
     await this.saveRefreshToken(userId, refreshToken);

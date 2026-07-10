@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { ApiKeyGuard } from '../auth/api-key/api-key.guard';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import {
@@ -23,11 +22,13 @@ import {
 import { APP_ROLES } from 'src/common/constants/enums.constant';
 import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Transactions')
 @ApiSecurity('ApiKey')
 @ApiBearerAuth('JWT')
 @Controller('transactions')
+@SkipThrottle({ strict: true })
 @UseGuards(DualAuthGuard, RolesGuard)
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}

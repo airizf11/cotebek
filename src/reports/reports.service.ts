@@ -6,6 +6,7 @@ import * as schema from '../database/schema';
 import {
   eq,
   and,
+  ne,
   gte,
   lte,
   sum,
@@ -40,6 +41,8 @@ export class ReportsService {
   async getSummary(appId: string, startDate?: string, endDate?: string) {
     const filters = [
       eq(schema.orders.appId, appId),
+      ne(schema.orders.status, 'CANCELLED'),
+      eq(schema.orders.paymentStatus, 'PAID'),
       ...this.buildDateFilters(schema.orders.createdAt, startDate, endDate),
     ];
 
@@ -70,6 +73,8 @@ export class ReportsService {
   async getTopItems(appId: string, startDate?: string, endDate?: string) {
     const filters = [
       eq(schema.orders.appId, appId),
+      ne(schema.orders.status, 'CANCELLED'),
+      eq(schema.orders.paymentStatus, 'PAID'),
       ...this.buildDateFilters(schema.orders.createdAt, startDate, endDate),
     ];
 
@@ -97,6 +102,8 @@ export class ReportsService {
   async getSalesTrend(appId: string, startDate?: string, endDate?: string) {
     const filters = [
       eq(schema.orders.appId, appId),
+      ne(schema.orders.status, 'CANCELLED'),
+      eq(schema.orders.paymentStatus, 'PAID'),
       ...this.buildDateFilters(schema.orders.createdAt, startDate, endDate),
     ];
 
@@ -199,6 +206,8 @@ export class ReportsService {
         .where(
           and(
             eq(schema.orders.appId, appId),
+            ne(schema.orders.status, 'CANCELLED'),
+            eq(schema.orders.paymentStatus, 'PAID'),
             gte(schema.orders.createdAt, startOfToday),
             lte(schema.orders.createdAt, endOfToday),
           ),
@@ -222,7 +231,13 @@ export class ReportsService {
       this.db
         .select({ total: sum(schema.orders.finalAmount) })
         .from(schema.orders)
-        .where(eq(schema.orders.appId, appId)),
+        .where(
+          and(
+            eq(schema.orders.appId, appId),
+            ne(schema.orders.status, 'CANCELLED'),
+            eq(schema.orders.paymentStatus, 'PAID'),
+          ),
+        ),
 
       this.db
         .select({ count: count() })

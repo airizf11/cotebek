@@ -25,11 +25,14 @@ import {
 } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
 import { Public } from 'src/common/decorators/public.decorator';
+import { SkipThrottle } from '@nestjs/throttler';
+import { MarkPaidDto } from './dto/mark-paid.dto';
 
 @ApiTags('Orders')
 @ApiSecurity('ApiKey')
 @ApiBearerAuth('JWT')
 @Controller('orders')
+@SkipThrottle({ strict: true })
 @UseGuards(DualAuthGuard) // <-- Pasang Satpam di sini!
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -113,6 +116,23 @@ export class OrdersController {
       req.appInfo.id,
       id,
       dto,
+      req.user?.id,
+      req.ip,
+    );
+  }
+
+  @Patch(':id/pay')
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @ApiOperation({ summary: 'Mark an unpaid order as paid' })
+  markAsPaid(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: MarkPaidDto,
+  ) {
+    return this.ordersService.markAsPaid(
+      req.appInfo.id,
+      id,
+      dto.paymentMethod,
       req.user?.id,
       req.ip,
     );

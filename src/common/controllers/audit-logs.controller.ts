@@ -12,11 +12,13 @@ import { DualAuthGuard } from '../../auth/dual-auth/dual-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { APP_ROLES } from '../constants/enums.constant';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Audit Logs')
 @ApiSecurity('ApiKey')
 @ApiBearerAuth('JWT')
 @Controller('audit-logs')
+@SkipThrottle({ strict: true })
 @UseGuards(DualAuthGuard, RolesGuard)
 export class AuditLogsController {
   constructor(private readonly auditService: AuditService) {}

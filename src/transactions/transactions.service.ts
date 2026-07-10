@@ -77,7 +77,7 @@ export class TransactionsService {
     endDate?: string,
     type?: string,
   ) {
-    const { page = 1, limit = 20, offset } = pagination;
+    const { page = 1, limit = 60, offset } = pagination;
 
     const filters = [eq(schema.transactions.appId, appId)];
     if (startDate)

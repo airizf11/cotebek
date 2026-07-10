@@ -10,6 +10,7 @@ import {
   IsUUID,
   IsDateString,
   IsNotEmpty,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -76,4 +77,8 @@ export class CreateOrderDto {
   @IsString()
   @MaxLength(50)
   promoCode?: string; // client kirim kode promo saat checkout
+
+  @IsOptional()
+  @IsIn(['PAID', 'UNPAID'])
+  paymentStatus?: 'PAID' | 'UNPAID';
 }

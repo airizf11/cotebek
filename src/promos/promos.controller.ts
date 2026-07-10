@@ -29,11 +29,13 @@ import {
 } from '@nestjs/swagger';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Promos')
 @ApiSecurity('ApiKey')
 @ApiBearerAuth('JWT')
 @Controller('promos')
+@SkipThrottle({ strict: true })
 @UseGuards(DualAuthGuard, RolesGuard)
 export class PromosController {
   constructor(private readonly promosService: PromosService) {}

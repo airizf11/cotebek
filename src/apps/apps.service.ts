@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { CreateAppDto } from './dto/create-app.dto';
 import { DRIZZLE } from '../database/database.module';
@@ -267,5 +268,95 @@ export class AppsService {
       throw new UnauthorizedException(
         'Access denied. You are not the Owner of this app.',
       );
+  }
+
+  async inviteMember(
+    ownerId: string,
+    appId: string,
+    email: string,
+    role: 'STAFF' | 'ADMIN' = 'STAFF',
+    ipAddress?: string | null,
+  ) {
+    await this.verifyOwner(ownerId, appId);
+
+    const existingUser = await this.db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1);
+
+    if (existingUser[0]) {
+      const existingMembership = await this.db
+        .select()
+        .from(schema.userApps)
+        .where(
+          and(
+            eq(schema.userApps.userId, existingUser[0].id),
+            eq(schema.userApps.appId, appId),
+          ),
+        )
+        .limit(1);
+
+      if (existingMembership[0]) {
+        throw new BadRequestException('User is already a member of this app.');
+      }
+
+      await this.db.insert(schema.userApps).values({
+        userId: existingUser[0].id,
+        appId,
+        role,
+        status: JOIN_STATUS.ACTIVE,
+      });
+
+      await this.auditService.log({
+        appId,
+        userId: ownerId,
+        action: AUDIT_ACTIONS.INVITE_MEMBER,
+        entity: 'userApps',
+        entityId: existingUser[0].id,
+        after: { role, status: 'ACTIVE', method: 'direct' },
+        ipAddress: ipAddress ?? null,
+      });
+
+      return { message: 'User already has an account, added directly.' };
+    }
+
+    try {
+      await this.db.insert(schema.appInvites).values({
+        appId,
+        email,
+        role,
+        invitedBy: ownerId,
+      });
+    } catch (err: any) {
+      if (err.code === '23505') {
+        throw new ConflictException('This email has already been invited.');
+      }
+      throw err;
+    }
+
+    await this.auditService.log({
+      appId,
+      userId: ownerId,
+      action: AUDIT_ACTIONS.INVITE_MEMBER,
+      entity: 'appInvites',
+      after: { email, role, method: 'pending_email' },
+      ipAddress: ipAddress ?? null,
+    });
+
+    return {
+      message: 'Invite sent. Waiting for them to log in with this email.',
+    };
+  }
+
+  async getPendingInvites(ownerId: string, appId: string) {
+    await this.verifyOwner(ownerId, appId);
+
+    const invites = await this.db
+      .select()
+      .from(schema.appInvites)
+      .where(eq(schema.appInvites.appId, appId));
+
+    return { message: 'Pending invites retrieved.', data: invites };
   }
 }

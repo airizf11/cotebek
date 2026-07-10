@@ -25,6 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { InviteMemberDto } from './dto/invite-member.dto';
 
 @ApiTags('Apps')
 @ApiBearerAuth('JWT')
@@ -55,7 +56,7 @@ export class AppsController {
   // 3. OWNER LIHAT DAFTAR KARYAWAN (Termasuk yang pending)
   @Get(':appId/members')
   @UseGuards(JwtAuthGuard)
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get member list of an app (Owner/Admin only)' })
   @ApiResponse({ status: 200, description: 'Member list retrieved.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
@@ -106,5 +107,31 @@ export class AppsController {
       targetUserId,
       req.ip,
     );
+  }
+
+  @Post(':appId/invite')
+  @UseGuards(JwtAuthGuard)
+  @Roles(APP_ROLES.OWNER)
+  @ApiOperation({ summary: 'Invite a member by email (Owner only)' })
+  inviteMember(
+    @Req() req: any,
+    @Param('appId') appId: string,
+    @Body() dto: InviteMemberDto,
+  ) {
+    return this.appsService.inviteMember(
+      req.user.id,
+      appId,
+      dto.email,
+      dto.role,
+      req.ip,
+    );
+  }
+
+  @Get(':appId/invites')
+  @UseGuards(JwtAuthGuard)
+  @Roles(APP_ROLES.OWNER)
+  @ApiOperation({ summary: 'Get pending email invites (Owner only)' })
+  getPendingInvites(@Req() req: any, @Param('appId') appId: string) {
+    return this.appsService.getPendingInvites(req.user.id, appId);
   }
 }

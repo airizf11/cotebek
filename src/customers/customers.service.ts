@@ -102,7 +102,7 @@ export class CustomersService {
   }
 
   async findAll(appId: string, query: QueryCustomerDto) {
-    const { page = 1, limit = 20, offset, search, city, district, tag } = query;
+    const { page = 1, limit = 25, offset, search, city, district, tag } = query;
 
     const filters = [eq(schema.customers.appId, appId)];
 
@@ -298,7 +298,7 @@ export class CustomersService {
     } catch (err: any) {
       if (err.code === '23503') {
         throw new ConflictException(
-          'Customer ini masih punya riwayat order, tidak bisa dihapus.',
+          'Customer still has order history, cannot be deleted.',
         );
       }
       throw err;

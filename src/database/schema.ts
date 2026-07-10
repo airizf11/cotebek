@@ -42,6 +42,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   // Orders
   'CREATE_ORDER',
   'UPDATE_ORDER_STATUS',
+  'MARK_ORDER_PAID',
   // Items
   'CREATE_ITEM',
   'UPDATE_ITEM',
@@ -51,6 +52,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   'REQUEST_JOIN',
   'APPROVE_MEMBER',
   'REMOVE_MEMBER',
+  'INVITE_MEMBER',
   // Transactions
   'CREATE_TRANSACTION',
   // Customers
@@ -77,9 +79,9 @@ export const orderStatusEnum = pgEnum('order_status', [
   'DONE',
   'CANCELLED',
 ]);
+export const paymentStatusEnum = pgEnum('payment_status', ['PAID', 'UNPAID']);
 
 export const promoTypeEnum = pgEnum('promo_type', ['PERCENTAGE', 'NOMINAL']);
-
 export const promoScopeEnum = pgEnum('promo_scope', [
   'ALL',
   'SPECIFIC_ITEMS',
@@ -194,6 +196,29 @@ export const userApps = pgTable('user_apps', {
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
+
+export const appInvites = pgTable(
+  'app_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    appId: uuid('app_id')
+      .references(() => apps.id, { onDelete: 'cascade' })
+      .notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
+    role: appRoleEnum('role').default('STAFF').notNull(),
+    invitedBy: uuid('invited_by').references(() => users.id),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'date',
+    }).defaultNow(),
+  },
+  (table) => ({
+    appEmailUnique: uniqueIndex('app_invites_app_email_unique').on(
+      table.appId,
+      table.email,
+    ),
+  }),
+);
 
 export const appSettings = pgTable(
   'app_settings',
@@ -317,6 +342,8 @@ export const orders = pgTable('orders', {
   totalAmount: decimal('total_amount', { precision: 15, scale: 2 }).notNull(),
   totalCogs: decimal('total_cogs', { precision: 15, scale: 2 }).default('0'),
   paymentMethod: varchar('payment_method', { length: 100 }),
+  paymentStatus: paymentStatusEnum('payment_status').default('PAID').notNull(),
+  paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
   status: orderStatusEnum('status').default('RECEIVED').notNull(),
   promoId: uuid('promo_id').references(() => promos.id), // nullable
   discountAmount: decimal('discount_amount', {

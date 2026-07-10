@@ -20,11 +20,13 @@ import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { APP_ROLES } from 'src/common/constants/enums.constant';
 import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('Customers')
 @ApiSecurity('ApiKey')
 @ApiBearerAuth('JWT')
 @Controller('customers')
+@SkipThrottle({ strict: true })
 @UseGuards(DualAuthGuard, RolesGuard)
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}

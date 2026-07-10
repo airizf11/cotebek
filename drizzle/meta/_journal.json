@@ -127,6 +127,20 @@
       "when": 1783502521747,
       "tag": "0017_dusty_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1783567043394,
+      "tag": "0018_clever_selene",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1783586694311,
+      "tag": "0019_bitter_jackal",
+      "breakpoints": true
     }
   ]
 }

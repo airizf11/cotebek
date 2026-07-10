@@ -90,6 +90,9 @@ export class OrdersService {
               discountAmount: discountAmount.toString(),
               finalAmount: finalAmount.toString(),
               paymentMethod: dto.paymentMethod,
+              paymentStatus: dto.paymentStatus ?? 'PAID',
+              paidAt:
+                (dto.paymentStatus ?? 'PAID') === 'PAID' ? new Date() : null,
             })
             .returning();
 
@@ -108,15 +111,17 @@ export class OrdersService {
 
           await tx.insert(schema.orderItems).values(itemsToInsert);
 
-          await tx.insert(schema.transactions).values({
-            appId,
-            type: 'IN',
-            category: 'SALES',
-            amount: finalAmount.toString(),
-            paymentMethod: dto.paymentMethod,
-            description: `Sales for ${orderNumber}`,
-            referenceId: orderId,
-          });
+          if ((dto.paymentStatus ?? 'PAID') === 'PAID') {
+            await tx.insert(schema.transactions).values({
+              appId,
+              type: 'IN',
+              category: 'SALES',
+              amount: finalAmount.toString(),
+              paymentMethod: dto.paymentMethod,
+              description: `Sales for ${orderNumber}`,
+              referenceId: orderId,
+            });
+          }
 
           if (promoId) {
             await tx.insert(schema.promoUsages).values({
@@ -163,7 +168,7 @@ export class OrdersService {
   async findAll(appId: string, query: QueryOrderDto) {
     const {
       page = 1,
-      limit = 20,
+      limit = 30,
       offset,
       status,
       startDate,
@@ -193,6 +198,7 @@ export class OrdersService {
           status: schema.orders.status,
           dueDate: schema.orders.dueDate,
           paymentMethod: schema.orders.paymentMethod,
+          paymentStatus: schema.orders.paymentStatus,
           handledBy: schema.orders.handledBy,
           customerId: schema.orders.customerId,
           // ✅ join customer name langsung
@@ -240,6 +246,8 @@ export class OrdersService {
         discountAmount: schema.orders.discountAmount,
         finalAmount: schema.orders.finalAmount,
         paymentMethod: schema.orders.paymentMethod,
+        paymentStatus: schema.orders.paymentStatus,
+        paidAt: schema.orders.paidAt,
         dueDate: schema.orders.dueDate,
         metadata: schema.orders.metadata,
         createdAt: schema.orders.createdAt,
@@ -325,6 +333,7 @@ export class OrdersService {
       const finalAmount = order[0].finalAmount;
       if (
         dto.status === 'CANCELLED' &&
+        order[0].paymentStatus === 'PAID' &&
         finalAmount !== null &&
         Number(finalAmount) > 0
       ) {
@@ -334,7 +343,7 @@ export class OrdersService {
           category: 'ADJUSTMENT',
           amount: finalAmount,
           paymentMethod: order[0].paymentMethod,
-          description: `Cancelled of Order ${order[0].orderNumber}`,
+          description: `Cancellation of order ${order[0].orderNumber}`,
           referenceId: id,
         });
       }
@@ -399,6 +408,7 @@ export class OrdersService {
         id: schema.orders.id,
         orderNumber: schema.orders.orderNumber,
         status: schema.orders.status,
+        paymentStatus: schema.orders.paymentStatus,
         dueDate: schema.orders.dueDate,
         createdAt: schema.orders.createdAt,
         customerName: schema.customers.name,
@@ -472,6 +482,7 @@ export class OrdersService {
         promoId: schema.orders.promoId,
         totalCogs: schema.orders.totalCogs,
         paymentMethod: schema.orders.paymentMethod,
+        paymentStatus: schema.orders.paymentStatus,
         dueDate: schema.orders.dueDate,
         createdAt: schema.orders.createdAt,
         customerName: schema.customers.name,
@@ -556,6 +567,72 @@ export class OrdersService {
           total: Number(o.finalAmount ?? o.totalAmount),
         },
       },
+    };
+  }
+
+  async markAsPaid(
+    appId: string,
+    id: string,
+    paymentMethod?: string,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
+    const order = await this.db
+      .select()
+      .from(schema.orders)
+      .where(and(eq(schema.orders.id, id), eq(schema.orders.appId, appId)))
+      .limit(1);
+
+    if (!order[0]) throw new NotFoundException('Order not found.');
+    if (order[0].paymentStatus === 'PAID') {
+      throw new BadRequestException('Order is already paid.');
+    }
+    if (order[0].status === 'CANCELLED') {
+      throw new BadRequestException('Order is already cancelled.');
+    }
+
+    const finalMethod = paymentMethod ?? order[0].paymentMethod;
+
+    const finalAmount = order[0].finalAmount;
+    if (finalAmount === null) {
+      throw new BadRequestException('Order has no valid final amount.');
+    }
+
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(schema.orders)
+        .set({
+          paymentStatus: 'PAID',
+          paidAt: new Date(),
+          paymentMethod: finalMethod,
+        })
+        .where(and(eq(schema.orders.id, id), eq(schema.orders.appId, appId)));
+
+      await tx.insert(schema.transactions).values({
+        appId,
+        type: 'IN',
+        category: 'SALES',
+        amount: finalAmount,
+        paymentMethod: finalMethod,
+        description: `Sales for ${order[0].orderNumber}`,
+        referenceId: id,
+      });
+    });
+
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.MARK_ORDER_PAID,
+      entity: 'orders',
+      entityId: id,
+      before: { paymentStatus: 'UNPAID' },
+      after: { paymentStatus: 'PAID', paymentMethod: finalMethod },
+      ipAddress: ipAddress ?? null,
+    });
+
+    return {
+      message: 'Order marked as paid.',
+      data: { id, paymentStatus: 'PAID' },
     };
   }
 }

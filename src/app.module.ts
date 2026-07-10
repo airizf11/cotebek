@@ -33,8 +33,8 @@ import { AuditLogsModule } from './common/audit-logs.module';
     ThrottlerModule.forRoot([
       {
         name: 'default',
-        ttl: 10_000, // 60 seconds window
-        limit: 10480, // 100 requests per window (global)
+        ttl: 30_000, // 60 seconds window
+        limit: 2048, // 100 requests per window (global)
       },
       {
         name: 'strict',
