@@ -26,6 +26,7 @@ import {
 import { APP_ROLES } from 'src/common/constants/enums.constant';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { InviteMemberDto } from './dto/invite-member.dto';
+import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
 
 @ApiTags('Apps')
 @ApiBearerAuth('JWT')
@@ -133,5 +134,12 @@ export class AppsController {
   @ApiOperation({ summary: 'Get pending email invites (Owner only)' })
   getPendingInvites(@Req() req: any, @Param('appId') appId: string) {
     return this.appsService.getPendingInvites(req.user.id, appId);
+  }
+
+  @Get('me')
+  @UseGuards(DualAuthGuard)
+  @ApiOperation({ summary: 'Get the app tied to the currently active API key' })
+  getCurrentApp(@Req() req: any) {
+    return this.appsService.getCurrentApp(req.appInfo.id);
   }
 }

@@ -359,4 +359,16 @@ export class AppsService {
 
     return { message: 'Pending invites retrieved.', data: invites };
   }
+
+  async getCurrentApp(appId: string) {
+    const app = await this.db
+      .select({ id: schema.apps.id, name: schema.apps.name })
+      .from(schema.apps)
+      .where(eq(schema.apps.id, appId))
+      .limit(1);
+
+    if (!app[0]) throw new NotFoundException('App not found.');
+
+    return { message: 'Current app retrieved.', data: app[0] };
+  }
 }

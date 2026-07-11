@@ -39,7 +39,7 @@ export class AuditService {
 
   async findAll(appId: string, pagination: PaginationDto) {
     const page = pagination.page ?? 1;
-    const limit = pagination.limit ?? 50;
+    const limit = pagination.limit ?? 20;
 
     const [logs, totalResult] = await Promise.all([
       this.db

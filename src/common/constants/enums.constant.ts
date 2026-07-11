@@ -67,6 +67,11 @@ export enum TransactionCategory {
   CAPEX = 'CAPEX',
 }
 
+export enum ItemType {
+  SERVICE = 'SERVICE',
+  GOOD = 'GOOD',
+}
+
 export enum Gender {
   MALE = 'MALE',
   FEMALE = 'FEMALE',

@@ -6,6 +6,7 @@ import {
   IsEnum,
   Min,
   MaxLength,
+  IsDateString,
 } from 'class-validator';
 import {
   TransactionCategory,
@@ -24,6 +25,11 @@ export class CreateTransactionDto {
   amount: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  fee?: number;
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   paymentMethod?: string;
@@ -35,4 +41,8 @@ export class CreateTransactionDto {
 
   @IsOptional()
   metadata?: any;
+
+  @IsOptional()
+  @IsDateString()
+  transactionDate?: string;
 }

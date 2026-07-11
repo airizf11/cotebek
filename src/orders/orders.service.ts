@@ -168,7 +168,7 @@ export class OrdersService {
   async findAll(appId: string, query: QueryOrderDto) {
     const {
       page = 1,
-      limit = 30,
+      limit = 20,
       offset,
       status,
       startDate,

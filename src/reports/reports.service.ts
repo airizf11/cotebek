@@ -88,7 +88,7 @@ export class ReportsService {
       .where(and(...filters))
       .groupBy(schema.orderItems.itemName)
       .orderBy(desc(sum(schema.orderItems.qty)))
-      .limit(5);
+      .limit(10);
 
     return {
       message: 'Top 5 best-selling items successfully retrieved.',

@@ -14,9 +14,9 @@ export class PaginationDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit?: number = 50;
 
   get offset(): number {
-    return ((this.page ?? 1) - 1) * (this.limit ?? 20);
+    return ((this.page ?? 1) - 1) * (this.limit ?? 50);
   }
 }

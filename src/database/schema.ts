@@ -26,6 +26,7 @@ export const txCategoryEnum = pgEnum('transaction_category', [
   'ADJUSTMENT',
   'CAPEX',
 ]);
+export const itemTypeEnum = pgEnum('item_type', ['SERVICE', 'GOOD']);
 export const appRoleEnum = pgEnum('user_role', [
   'DEV',
   'OWNER',
@@ -68,9 +69,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   // Auth
   'USER_LOGIN',
 ]);
-
 export const genderEnum = pgEnum('gender', ['MALE', 'FEMALE', 'OTHER']);
-
 export const orderStatusEnum = pgEnum('order_status', [
   'PENDING', // ← baru: belum dikonfirmasi / belum dibayar
   'RECEIVED',
@@ -80,7 +79,6 @@ export const orderStatusEnum = pgEnum('order_status', [
   'CANCELLED',
 ]);
 export const paymentStatusEnum = pgEnum('payment_status', ['PAID', 'UNPAID']);
-
 export const promoTypeEnum = pgEnum('promo_type', ['PERCENTAGE', 'NOMINAL']);
 export const promoScopeEnum = pgEnum('promo_scope', [
   'ALL',
@@ -255,6 +253,8 @@ export const items = pgTable('items', {
   price: decimal('price', { precision: 15, scale: 2 }).notNull(),
   cogs: decimal('cogs', { precision: 15, scale: 2 }).default('0'),
   category: text('category'),
+  type: itemTypeEnum('type').default('SERVICE').notNull(),
+  unit: varchar('unit', { length: 20 }),
   isActive: boolean('is_active').default(true),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at', {
@@ -264,6 +264,61 @@ export const items = pgTable('items', {
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
     .defaultNow()
     .$onUpdate(() => new Date()),
+});
+
+export const rawMaterials = pgTable('raw_materials', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id')
+    .references(() => apps.id, { onDelete: 'cascade' })
+    .notNull(),
+  name: text('name').notNull(),
+  unit: varchar('unit', { length: 20 }),
+  category: varchar('category', { length: 100 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).defaultNow(),
+});
+
+export const txItems = pgTable('transactions_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  transactionId: uuid('transaction_id')
+    .references(() => transactions.id, { onDelete: 'cascade' })
+    .notNull(),
+  rawMaterialId: uuid('raw_material_id').references(() => rawMaterials.id),
+  itemName: text('item_name').notNull(),
+  qty: decimal('qty', { precision: 10, scale: 2 }).notNull(),
+  unit: varchar('unit', { length: 20 }),
+  price: decimal('price', { precision: 15, scale: 2 }).notNull(),
+  subtotal: decimal('subtotal', { precision: 15, scale: 2 }).notNull(),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).defaultNow(),
+});
+
+export const transactions = pgTable('transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id')
+    .references(() => apps.id)
+    .notNull(),
+  txNumber: varchar('tx_number', { length: 50 }),
+  type: transactionTypeEnum('type').notNull(),
+  category: txCategoryEnum('category').notNull(),
+  amount: decimal('amount', { precision: 15, scale: 2 }).notNull(),
+  fee: decimal('fee', { precision: 15, scale: 2 }),
+  paymentMethod: varchar('payment_method', { length: 100 }),
+  paymentStatus: paymentStatusEnum('payment_status').default('PAID').notNull(),
+  paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+  dueDate: timestamp('due_date', { withTimezone: true, mode: 'date' }),
+  description: varchar('description', { length: 255 }),
+  referenceId: uuid('reference_id'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).defaultNow(),
 });
 
 export const customers = pgTable(
@@ -310,25 +365,6 @@ export const customers = pgTable(
     ),
   }),
 );
-
-export const transactions = pgTable('transactions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  appId: uuid('app_id')
-    .references(() => apps.id)
-    .notNull(),
-  txNumber: varchar('tx_number', { length: 50 }),
-  type: transactionTypeEnum('type').notNull(),
-  category: txCategoryEnum('category').notNull(),
-  amount: decimal('amount', { precision: 15, scale: 2 }).notNull(),
-  paymentMethod: varchar('payment_method', { length: 100 }),
-  description: varchar('description', { length: 255 }),
-  referenceId: uuid('reference_id'),
-  metadata: jsonb('metadata'),
-  createdAt: timestamp('created_at', {
-    withTimezone: true,
-    mode: 'date',
-  }).defaultNow(),
-});
 
 export const orders = pgTable('orders', {
   id: uuid('id').primaryKey().defaultRandom(),

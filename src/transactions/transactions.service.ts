@@ -29,17 +29,25 @@ export class TransactionsService {
       async (tx) => {
         const txNumber = await generateDocNumber(tx, appId, 'transaction');
 
+        const fee = dto.fee ?? 0;
+        const netAmount =
+          dto.type === 'IN' ? dto.amount - fee : dto.amount + fee;
+
         const inserted = await tx
           .insert(schema.transactions)
           .values({
             appId, // ID usahanya otomatis dari API Key! Gak bisa dipalsukan.
             type: dto.type,
             category: dto.category, // 'SALES', 'EXPENSE', dll
-            amount: dto.amount.toString(),
+            amount: netAmount.toString(),
+            fee: dto.fee ? dto.fee.toString() : undefined,
             paymentMethod: dto.paymentMethod,
             description: dto.description,
             txNumber,
             metadata: dto.metadata, // Catatan JSON bebas
+            createdAt: dto.transactionDate
+              ? new Date(dto.transactionDate)
+              : undefined,
           })
           .returning();
 
@@ -77,7 +85,7 @@ export class TransactionsService {
     endDate?: string,
     type?: string,
   ) {
-    const { page = 1, limit = 60, offset } = pagination;
+    const { page = 1, limit = 20, offset } = pagination;
 
     const filters = [eq(schema.transactions.appId, appId)];
     if (startDate)
