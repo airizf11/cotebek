@@ -23,6 +23,7 @@ import { APP_ROLES } from 'src/common/constants/enums.constant';
 import { DualAuthGuard } from 'src/auth/dual-auth/dual-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { SkipThrottle } from '@nestjs/throttler';
+import { GetTransactionsDto } from './dto/get-transactions.dto';
 
 @ApiTags('Transactions')
 @ApiSecurity('ApiKey')
@@ -46,6 +47,7 @@ export class TransactionsController {
     );
   }
 
+  /* before Gemini update....
   @Get()
   @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
   @ApiOperation({
@@ -65,6 +67,25 @@ export class TransactionsController {
       startDate,
       endDate,
       type,
+    );
+  } */
+
+  @Get()
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @ApiOperation({
+    summary: 'Get cash flow history with summary (Owner/Admin only)',
+  })
+  @ApiResponse({ status: 200, description: 'Transactions retrieved.' })
+  findAll(
+    @Req() req: any,
+    @Query() query: GetTransactionsDto, // <--- Ubah bagian ini
+  ) {
+    return this.transactionsService.findAll(
+      req.appInfo.id,
+      query, // query ini otomatis mewarisi page & limit dari PaginationDto
+      query.startDate,
+      query.endDate,
+      query.type,
     );
   }
 }
