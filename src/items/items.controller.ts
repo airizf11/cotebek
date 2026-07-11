@@ -38,7 +38,7 @@ export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}
 
   @Post()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
   @ApiOperation({ summary: 'Create a new item (Owner/Admin only)' })
   @ApiResponse({ status: 201, description: 'Item created.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
@@ -47,7 +47,7 @@ export class ItemsController {
   }
 
   @Get()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get all active items' })
   @ApiResponse({ status: 200, description: 'Item list retrieved.' })
   findAll(@Req() req: any, @Query() query: QueryItemDto) {
@@ -59,7 +59,7 @@ export class ItemsController {
   }
 
   @Get(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get item detail by ID' })
   @ApiResponse({ status: 200, description: 'Item detail retrieved.' })
   @ApiResponse({ status: 404, description: 'Item not found.' })
@@ -69,7 +69,7 @@ export class ItemsController {
 
   // Gunakan PUT atau PATCH bebas, Nest bawaannya PATCH, tapi kita ubah ke PUT aja biar gampang
   @Put(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
   @ApiOperation({ summary: 'Update an item (Owner/Admin only)' })
   @ApiResponse({ status: 200, description: 'Item updated.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
@@ -84,7 +84,7 @@ export class ItemsController {
   }
 
   @Delete(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
   @ApiOperation({ summary: 'Soft-delete an item (Owner/Admin only)' })
   @ApiResponse({ status: 200, description: 'Item removed.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })

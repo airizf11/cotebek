@@ -38,7 +38,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Create a new order' })
   @ApiResponse({ status: 201, description: 'Order created.' })
   create(@Req() request: any, @Body() createOrderDto: CreateOrderDto) {
@@ -57,7 +57,7 @@ export class OrdersController {
   }
 
   @Get()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get all orders with filters' })
   @ApiResponse({ status: 200, description: 'Order list retrieved.' })
   findAll(@Req() req: any, @Query() query: QueryOrderDto) {
@@ -65,7 +65,7 @@ export class OrdersController {
   }
 
   @Get('active')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get all non-DONE orders sorted by due date' })
   @ApiResponse({ status: 200, description: 'Active orders retrieved.' })
   getActiveOrders(@Req() req: any) {
@@ -84,7 +84,7 @@ export class OrdersController {
   }
 
   @Get(':id/receipt')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get receipt data for an order (ready to render)' })
   @ApiResponse({ status: 200, description: 'Receipt data retrieved.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
@@ -93,7 +93,7 @@ export class OrdersController {
   }
 
   @Get(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get order detail with items' })
   @ApiResponse({ status: 200, description: 'Order detail retrieved.' })
   @ApiResponse({ status: 404, description: 'Order not found.' })
@@ -102,7 +102,7 @@ export class OrdersController {
   }
 
   @Patch(':id/status') // ✅ PATCH — partial update
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Update order status (state machine enforced)' })
   @ApiResponse({ status: 200, description: 'Status updated.' })
   @ApiResponse({ status: 400, description: 'Invalid status transition.' })
@@ -122,7 +122,7 @@ export class OrdersController {
   }
 
   @Patch(':id/pay')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Mark an unpaid order as paid' })
   markAsPaid(
     @Req() req: any,

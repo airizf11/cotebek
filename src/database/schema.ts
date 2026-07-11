@@ -54,6 +54,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   'APPROVE_MEMBER',
   'REMOVE_MEMBER',
   'INVITE_MEMBER',
+  'CREATE_TEAM_MEMBER',
   // Transactions
   'CREATE_TRANSACTION',
   // Customers
@@ -195,6 +196,21 @@ export const userApps = pgTable('user_apps', {
     .$onUpdate(() => new Date()),
 });
 
+export const teamMembers = pgTable('team_members', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  appId: uuid('app_id')
+    .references(() => apps.id, { onDelete: 'cascade' })
+    .notNull(),
+  name: text('name').notNull(),
+  phone: varchar('phone', { length: 20 }),
+  userId: uuid('user_id').references(() => users.id),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+    mode: 'date',
+  }).defaultNow(),
+});
+
 export const appInvites = pgTable(
   'app_invites',
   {
@@ -281,7 +297,7 @@ export const rawMaterials = pgTable('raw_materials', {
   }).defaultNow(),
 });
 
-export const txItems = pgTable('transactions_items', {
+export const txItems = pgTable('transaction_items', {
   id: uuid('id').primaryKey().defaultRandom(),
   transactionId: uuid('transaction_id')
     .references(() => transactions.id, { onDelete: 'cascade' })
@@ -372,6 +388,7 @@ export const orders = pgTable('orders', {
     .references(() => apps.id)
     .notNull(),
   handledBy: uuid('handled_by').references(() => users.id),
+  teamMemberId: uuid('team_member_id').references(() => teamMembers.id),
   customerId: uuid('customer_id').references(() => customers.id),
   dueDate: timestamp('due_date', { withTimezone: true, mode: 'date' }),
   orderNumber: varchar('order_number', { length: 100 }).notNull(),

@@ -24,7 +24,7 @@ export class AuditLogsController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get()
-  @Roles(APP_ROLES.OWNER)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER)
   @ApiOperation({ summary: 'Get audit log history for this app' })
   findAll(@Req() req: any, @Query() pagination: PaginationDto) {
     return this.auditService.findAll(req.appInfo.id, pagination);

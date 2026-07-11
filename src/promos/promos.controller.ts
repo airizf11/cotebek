@@ -41,7 +41,7 @@ export class PromosController {
   constructor(private readonly promosService: PromosService) {}
 
   @Post()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
   @ApiOperation({ summary: 'Create a new promo (Owner/Admin only)' })
   @ApiResponse({ status: 201, description: 'Promo created.' })
   @ApiResponse({ status: 409, description: 'Promo code already exists.' })
@@ -50,7 +50,7 @@ export class PromosController {
   }
 
   @Get()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get all promos' })
   @ApiResponse({ status: 200, description: 'Promo list retrieved.' })
   findAll(@Req() req: any, @Query() pagination: PaginationDto) {
@@ -58,7 +58,7 @@ export class PromosController {
   }
 
   @Get(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Get promo detail by ID' })
   @ApiResponse({ status: 200, description: 'Promo detail retrieved.' })
   @ApiResponse({ status: 404, description: 'Promo not found.' })
@@ -67,7 +67,7 @@ export class PromosController {
   }
 
   @Put(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
   @ApiOperation({ summary: 'Update a promo (Owner/Admin only)' })
   @ApiResponse({ status: 200, description: 'Promo updated.' })
   @ApiResponse({ status: 404, description: 'Promo not found.' })
@@ -86,7 +86,7 @@ export class PromosController {
   }
 
   @Delete(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
   @ApiOperation({ summary: 'Deactivate a promo (Owner/Admin only)' })
   @ApiResponse({ status: 200, description: 'Promo deactivated.' })
   @ApiResponse({ status: 404, description: 'Promo not found.' })
@@ -96,7 +96,7 @@ export class PromosController {
 
   // ─── Check promo sebelum checkout ────
   @Post('check')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({
     summary: 'Preview discount before applying promo at checkout',
   })

@@ -32,7 +32,7 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   create(@Req() req: any, @Body() dto: CreateCustomerDto) {
     return this.customersService.create(
       req.appInfo.id,
@@ -43,25 +43,25 @@ export class CustomersController {
   }
 
   @Get()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   findAll(@Req() req: any, @Query() query: QueryCustomerDto) {
     return this.customersService.findAll(req.appInfo.id, query);
   }
 
   @Get('search/phone')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   findByPhone(@Req() req: any, @Query('phone') phone: string) {
     return this.customersService.findByPhone(req.appInfo.id, phone);
   }
 
   @Get(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   findOne(@Req() req: any, @Param('id') id: string) {
     return this.customersService.findOne(req.appInfo.id, id);
   }
 
   @Put(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   update(
     @Req() req: any,
     @Param('id') id: string,
@@ -77,7 +77,7 @@ export class CustomersController {
   }
 
   @Delete(':id')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   remove(@Req() req: any, @Param('id') id: string) {
     return this.customersService.remove(
       req.appInfo.id,

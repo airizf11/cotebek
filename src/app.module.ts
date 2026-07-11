@@ -20,6 +20,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { PromosModule } from './promos/promos.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuditLogsModule } from './common/audit-logs.module';
+import { TeamMembersModule } from './team-members/team-members.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { AuditLogsModule } from './common/audit-logs.module';
     AppSettingsModule,
     PromosModule,
     AuditLogsModule,
+    TeamMembersModule,
   ],
   controllers: [AppController],
   providers: [

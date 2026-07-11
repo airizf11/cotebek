@@ -30,19 +30,19 @@ export class AppSettingsController {
   constructor(private readonly appSettingsService: AppSettingsService) {}
 
   @Get()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   findAll(@Req() req: any) {
     return this.appSettingsService.findAll(req.appInfo.id);
   }
 
   @Get(':key')
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   findOne(@Req() req: any, @Param('key') key: string) {
     return this.appSettingsService.findOne(req.appInfo.id, key);
   }
 
   @Post()
-  @Roles(APP_ROLES.OWNER)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER)
   upsert(@Req() req: any, @Body() dto: UpsertSettingDto) {
     return this.appSettingsService.upsert(
       req.appInfo.id,
@@ -53,7 +53,7 @@ export class AppSettingsController {
   }
 
   @Post('bulk')
-  @Roles(APP_ROLES.OWNER)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER)
   bulkUpsert(@Req() req: any, @Body() dto: BulkUpsertSettingsDto) {
     return this.appSettingsService.bulkUpsert(
       req.appInfo.id,
@@ -64,7 +64,7 @@ export class AppSettingsController {
   }
 
   @Delete(':key')
-  @Roles(APP_ROLES.OWNER)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER)
   remove(@Req() req: any, @Param('key') key: string) {
     return this.appSettingsService.remove(
       req.appInfo.id,

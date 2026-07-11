@@ -34,7 +34,7 @@ export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Post()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
   @ApiOperation({ summary: 'Record a new cash flow transaction' })
   @ApiResponse({ status: 201, description: 'Transaction recorded.' })
   create(@Req() req: any, @Body() dto: CreateTransactionDto) {
@@ -47,7 +47,7 @@ export class TransactionsController {
   }
 
   @Get()
-  @Roles(APP_ROLES.OWNER, APP_ROLES.ADMIN)
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN)
   @ApiOperation({
     summary: 'Get cash flow history with summary (Owner/Admin only)',
   })

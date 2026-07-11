@@ -1,4 +1,4 @@
-// cotebek/src/reports/reports.service.ts
+// cotebek/src/reports/orders-reports.service.ts
 import { Inject, Injectable } from '@nestjs/common';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
@@ -18,7 +18,7 @@ import {
 } from 'drizzle-orm';
 
 @Injectable()
-export class ReportsService {
+export class OrdersReportsService {
   constructor(@Inject(DRIZZLE) private db: NodePgDatabase<typeof schema>) {}
 
   // ─── Private Helper ───────────────────────────────────────────────
