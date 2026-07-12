@@ -1,5 +1,10 @@
 // cotebek/src/transactions/transactions.service.ts
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
@@ -48,6 +53,10 @@ export class TransactionsService {
             createdAt: dto.transactionDate
               ? new Date(dto.transactionDate)
               : undefined,
+            paymentStatus: dto.paymentStatus ?? 'PAID',
+            paidAt:
+              (dto.paymentStatus ?? 'PAID') === 'PAID' ? new Date() : null,
+            dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
           })
           .returning();
 
@@ -143,6 +152,55 @@ export class TransactionsService {
       message: 'Cash flow history successfully retrieved.',
       summary: { totalIn, totalOut, balance: totalIn - totalOut },
       ...paginate(formatted, Number(total), page, limit),
+    };
+  }
+
+  async markAsPaid(
+    appId: string,
+    id: string,
+    userId?: string | null,
+    ipAddress?: string | null,
+  ) {
+    const record = await this.db
+      .select()
+      .from(schema.transactions)
+      .where(
+        and(
+          eq(schema.transactions.id, id),
+          eq(schema.transactions.appId, appId),
+        ),
+      )
+      .limit(1);
+
+    if (!record[0]) throw new NotFoundException('Transaction not found.');
+    if (record[0].paymentStatus === 'PAID') {
+      throw new BadRequestException('Transaction is already paid.');
+    }
+
+    await this.db
+      .update(schema.transactions)
+      .set({ paymentStatus: 'PAID', paidAt: new Date() })
+      .where(
+        and(
+          eq(schema.transactions.id, id),
+          eq(schema.transactions.appId, appId),
+        ),
+      );
+
+    await this.auditService.log({
+      appId,
+      userId: userId ?? null,
+      action: AUDIT_ACTIONS.MARK_TRANSACTION_PAID,
+      entity: 'transactions',
+      entityId: id,
+      before: { paymentStatus: 'UNPAID' },
+      after: { paymentStatus: 'PAID' },
+      ipAddress: ipAddress ?? null,
+    });
+
+    return {
+      message: 'Transaction marked as paid.',
+      data: { id, paymentStatus: 'PAID' },
     };
   }
 }

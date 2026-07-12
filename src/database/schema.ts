@@ -57,6 +57,7 @@ export const auditActionEnum = pgEnum('audit_action', [
   'CREATE_TEAM_MEMBER',
   // Transactions
   'CREATE_TRANSACTION',
+  'MARK_TRANSACTION_PAID',
   // Customers
   'CREATE_CUSTOMER',
   'UPDATE_CUSTOMER',

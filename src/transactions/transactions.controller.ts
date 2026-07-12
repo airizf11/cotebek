@@ -7,6 +7,8 @@ import {
   Req,
   Get,
   Query,
+  Patch,
+  Param,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -86,6 +88,18 @@ export class TransactionsController {
       query.startDate,
       query.endDate,
       query.type,
+    );
+  }
+
+  @Patch(':id/pay')
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  @ApiOperation({ summary: 'Mark an unpaid transaction as paid' })
+  markAsPaid(@Req() req: any, @Param('id') id: string) {
+    return this.transactionsService.markAsPaid(
+      req.appInfo.id,
+      id,
+      req.user?.id,
+      req.ip,
     );
   }
 }

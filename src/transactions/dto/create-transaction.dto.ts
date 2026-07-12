@@ -7,6 +7,7 @@ import {
   Min,
   MaxLength,
   IsDateString,
+  IsIn,
 } from 'class-validator';
 import {
   TransactionCategory,
@@ -45,4 +46,12 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsDateString()
   transactionDate?: string;
+
+  @IsOptional()
+  @IsIn(['PAID', 'UNPAID'])
+  paymentStatus?: 'PAID' | 'UNPAID';
+
+  @IsOptional()
+  @IsDateString()
+  dueDate?: string;
 }

@@ -1,6 +1,7 @@
 // cotebek/src/orders/orders.service.ts
 import {
   BadRequestException,
+  ForbiddenException,
   HttpException,
   Inject,
   Injectable,
@@ -46,6 +47,51 @@ export class OrdersService {
     ipAddress?: string | null,
   ) {
     try {
+      let teamMemberId: string | null = null;
+      if (dto.teamMemberId) {
+        const member = await this.db
+          .select()
+          .from(schema.teamMembers)
+          .where(
+            and(
+              eq(schema.teamMembers.id, dto.teamMemberId),
+              eq(schema.teamMembers.appId, appId),
+            ),
+          )
+          .limit(1);
+
+        if (!member[0]) {
+          throw new BadRequestException('Team member not found.');
+        }
+
+        // Lapis 1: STAFF cuma boleh pilih dirinya sendiri, atau anggota
+        // yang gak punya akun (gak ada userId nempel). OWNER/ADMIN bebas.
+        if (handledBy) {
+          const callerRole = await this.db
+            .select({ role: schema.userApps.role })
+            .from(schema.userApps)
+            .where(
+              and(
+                eq(schema.userApps.userId, handledBy),
+                eq(schema.userApps.appId, appId),
+              ),
+            )
+            .limit(1);
+
+          const role = callerRole[0]?.role;
+          const isSelf = member[0].userId === handledBy;
+          const isUnlinked = member[0].userId === null;
+
+          if (role === 'STAFF' && !isSelf && !isUnlinked) {
+            throw new ForbiddenException(
+              'Staff can only log entries under their own name or a team member without a linked account.',
+            );
+          }
+        }
+
+        teamMemberId = dto.teamMemberId;
+      }
+
       const { order: result, orderNumber } = await this.db.transaction(
         async (tx) => {
           // doc number — sudah fix #1, tetap di sini
@@ -80,6 +126,7 @@ export class OrdersService {
               appId,
               customerId: dto.customerId ?? null,
               handledBy: handledBy ?? null,
+              teamMemberId,
               orderNumber,
               totalAmount: dto.totalAmount.toString(),
               totalCogs: dto.totalCogs.toString(),
@@ -256,6 +303,8 @@ export class OrdersService {
         customerPhone: schema.customers.phone,
         handledBy: schema.orders.handledBy,
         handledByName: schema.users.name,
+        teamMemberId: schema.orders.teamMemberId,
+        teamMemberName: schema.teamMembers.name,
         promoId: schema.orders.promoId,
         promoName: schema.promos.name,
         promoCode: schema.promos.code,
@@ -266,6 +315,10 @@ export class OrdersService {
         eq(schema.orders.customerId, schema.customers.id),
       )
       .leftJoin(schema.users, eq(schema.orders.handledBy, schema.users.id))
+      .leftJoin(
+        schema.teamMembers,
+        eq(schema.orders.teamMemberId, schema.teamMembers.id),
+      )
       .leftJoin(schema.promos, eq(schema.orders.promoId, schema.promos.id))
       .where(and(eq(schema.orders.id, id), eq(schema.orders.appId, appId)))
       .limit(1);

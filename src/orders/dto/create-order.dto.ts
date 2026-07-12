@@ -81,4 +81,8 @@ export class CreateOrderDto {
   @IsOptional()
   @IsIn(['PAID', 'UNPAID'])
   paymentStatus?: 'PAID' | 'UNPAID';
+
+  @IsOptional()
+  @IsUUID()
+  teamMemberId?: string;
 }
