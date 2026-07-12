@@ -85,4 +85,8 @@ export class CreateOrderDto {
   @IsOptional()
   @IsUUID()
   teamMemberId?: string;
+
+  @IsOptional()
+  @IsDateString()
+  orderDate?: string;
 }

@@ -280,7 +280,7 @@ export class AppsService {
     await this.verifyOwner(ownerId, appId);
 
     const existingUser = await this.db
-      .select({ id: schema.users.id, name: schema.users.name })
+      .select({ id: schema.users.id })
       .from(schema.users)
       .where(eq(schema.users.email, email))
       .limit(1);
@@ -306,12 +306,6 @@ export class AppsService {
         appId,
         role,
         status: JOIN_STATUS.ACTIVE,
-      });
-
-      await this.db.insert(schema.teamMembers).values({
-        appId,
-        name: existingUser[0].name ?? email,
-        userId: existingUser[0].id,
       });
 
       await this.auditService.log({

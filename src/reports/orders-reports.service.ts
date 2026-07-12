@@ -136,6 +136,7 @@ export class OrdersReportsService {
   async getPaymentMethods(appId: string, startDate?: string, endDate?: string) {
     const filters = [
       eq(schema.transactions.appId, appId),
+      ne(schema.transactions.category, 'ADJUSTMENT'),
       ...this.buildDateFilters(
         schema.transactions.createdAt,
         startDate,

@@ -140,6 +140,7 @@ export class OrdersService {
               paymentStatus: dto.paymentStatus ?? 'PAID',
               paidAt:
                 (dto.paymentStatus ?? 'PAID') === 'PAID' ? new Date() : null,
+              createdAt: dto.orderDate ? new Date(dto.orderDate) : undefined,
             })
             .returning();
 
@@ -167,6 +168,7 @@ export class OrdersService {
               paymentMethod: dto.paymentMethod,
               description: `Sales for ${orderNumber}`,
               referenceId: orderId,
+              createdAt: dto.orderDate ? new Date(dto.orderDate) : undefined,
             });
           }
 

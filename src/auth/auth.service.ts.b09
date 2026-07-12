@@ -264,12 +264,6 @@ export class AuthService {
       await this.db
         .delete(schema.appInvites)
         .where(eq(schema.appInvites.id, invite.id));
-
-      await this.db.insert(schema.teamMembers).values({
-        appId: invite.appId,
-        name: payload.name ?? email,
-        userId,
-      });
     }
 
     const accessToken = this.generateAccessToken({ sub: userId, email });
