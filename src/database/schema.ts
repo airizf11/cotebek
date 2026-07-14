@@ -70,6 +70,9 @@ export const auditActionEnum = pgEnum('audit_action', [
   'UPDATE_APP_SETTINGS',
   // Auth
   'USER_LOGIN',
+  // Raw Materials
+  'CREATE_RAW_MATERIAL',
+  'UPDATE_RAW_MATERIAL',
 ]);
 export const genderEnum = pgEnum('gender', ['MALE', 'FEMALE', 'OTHER']);
 export const orderStatusEnum = pgEnum('order_status', [
@@ -329,6 +332,7 @@ export const transactions = pgTable('transactions', {
   paymentStatus: paymentStatusEnum('payment_status').default('PAID').notNull(),
   paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
   dueDate: timestamp('due_date', { withTimezone: true, mode: 'date' }),
+  teamMemberId: uuid('team_member_id').references(() => teamMembers.id),
   description: varchar('description', { length: 255 }),
   referenceId: uuid('reference_id'),
   metadata: jsonb('metadata'),

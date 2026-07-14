@@ -169,6 +169,20 @@
       "when": 1783809097018,
       "tag": "0023_bumpy_catseye",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1783895667453,
+      "tag": "0024_mushy_dark_phoenix",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1783997377054,
+      "tag": "0025_glossy_james_howlett",
+      "breakpoints": true
     }
   ]
 }

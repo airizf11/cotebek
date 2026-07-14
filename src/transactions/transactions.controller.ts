@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import {
   ApiResponse,
@@ -101,5 +100,11 @@ export class TransactionsController {
       req.user?.id,
       req.ip,
     );
+  }
+
+  @Get(':id')
+  @Roles(APP_ROLES.DEV, APP_ROLES.OWNER, APP_ROLES.ADMIN, APP_ROLES.STAFF)
+  findOne(@Req() req: any, @Param('id') id: string) {
+    return this.transactionsService.findOne(req.appInfo.id, id);
   }
 }

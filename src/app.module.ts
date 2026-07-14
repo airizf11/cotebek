@@ -21,6 +21,8 @@ import { PromosModule } from './promos/promos.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuditLogsModule } from './common/audit-logs.module';
 import { TeamMembersModule } from './team-members/team-members.module';
+import { RawMaterialsModule } from './raw-materials/raw-materials.module';
+import { AttachmentsModule } from './attachments/attachments.module';
 
 @Module({
   imports: [
@@ -57,6 +59,8 @@ import { TeamMembersModule } from './team-members/team-members.module';
     PromosModule,
     AuditLogsModule,
     TeamMembersModule,
+    RawMaterialsModule,
+    AttachmentsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -60,6 +60,20 @@ export class TransactionsService {
           })
           .returning();
 
+        if (dto.items && dto.items.length > 0) {
+          await tx.insert(schema.txItems).values(
+            dto.items.map((item) => ({
+              transactionId: inserted[0].id,
+              rawMaterialId: item.rawMaterialId ?? null,
+              itemName: item.itemName,
+              qty: item.qty.toString(),
+              unit: item.unit,
+              price: item.price.toString(),
+              subtotal: item.subtotal.toString(),
+            })),
+          );
+        }
+
         return { record: inserted[0], txNumber };
       },
     );
@@ -111,8 +125,30 @@ export class TransactionsService {
     const [result, [{ total }], summaryRows] = await Promise.all([
       // Query 1: paginated rows
       this.db
-        .select()
+        .select({
+          id: schema.transactions.id,
+          appId: schema.transactions.appId,
+          txNumber: schema.transactions.txNumber,
+          type: schema.transactions.type,
+          category: schema.transactions.category,
+          amount: schema.transactions.amount,
+          fee: schema.transactions.fee,
+          paymentMethod: schema.transactions.paymentMethod,
+          paymentStatus: schema.transactions.paymentStatus,
+          paidAt: schema.transactions.paidAt,
+          dueDate: schema.transactions.dueDate,
+          teamMemberId: schema.transactions.teamMemberId,
+          teamMemberName: schema.teamMembers.name,
+          description: schema.transactions.description,
+          referenceId: schema.transactions.referenceId,
+          metadata: schema.transactions.metadata,
+          createdAt: schema.transactions.createdAt,
+        })
         .from(schema.transactions)
+        .leftJoin(
+          schema.teamMembers,
+          eq(schema.transactions.teamMemberId, schema.teamMembers.id),
+        )
         .where(and(...filters))
         .orderBy(desc(schema.transactions.createdAt))
         .limit(limit)
@@ -201,6 +237,40 @@ export class TransactionsService {
     return {
       message: 'Transaction marked as paid.',
       data: { id, paymentStatus: 'PAID' },
+    };
+  }
+
+  async findOne(appId: string, id: string) {
+    const record = await this.db
+      .select()
+      .from(schema.transactions)
+      .where(
+        and(
+          eq(schema.transactions.id, id),
+          eq(schema.transactions.appId, appId),
+        ),
+      )
+      .limit(1);
+
+    if (!record[0]) throw new NotFoundException('Transaction not found.');
+
+    const items = await this.db
+      .select()
+      .from(schema.txItems)
+      .where(eq(schema.txItems.transactionId, id));
+
+    return {
+      message: 'Transaction detail retrieved.',
+      data: {
+        ...record[0],
+        amount: Number(record[0].amount),
+        items: items.map((i) => ({
+          ...i,
+          qty: Number(i.qty),
+          price: Number(i.price),
+          subtotal: Number(i.subtotal),
+        })),
+      },
     };
   }
 }

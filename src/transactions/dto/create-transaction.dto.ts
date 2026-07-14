@@ -1,4 +1,5 @@
 // cotebek/src/transactions/dto/create-transaction.dto.ts
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsNumber,
@@ -8,11 +9,41 @@ import {
   MaxLength,
   IsDateString,
   IsIn,
+  IsUUID,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import {
   TransactionCategory,
   TransactionType,
 } from 'src/common/constants/enums.constant';
+
+class TxItemDto {
+  @IsOptional()
+  @IsUUID()
+  rawMaterialId?: string;
+
+  @IsString()
+  @MaxLength(255)
+  itemName: string;
+
+  @IsNumber()
+  @Min(0)
+  qty: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  unit?: string;
+
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsNumber()
+  @Min(0)
+  subtotal: number;
+}
 
 export class CreateTransactionDto {
   @IsEnum(TransactionType)
@@ -54,4 +85,14 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsDateString()
   dueDate?: string;
+
+  @IsOptional()
+  @IsUUID()
+  teamMemberId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TxItemDto)
+  items?: TxItemDto[];
 }

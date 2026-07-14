@@ -44,6 +44,9 @@ export const AUDIT_ACTIONS = {
   UPDATE_APP_SETTINGS: 'UPDATE_APP_SETTINGS',
   // Auth
   USER_LOGIN: 'USER_LOGIN',
+  // Raw Materials
+  CREATE_RAW_MATERIAL: 'CREATE_RAW_MATERIAL',
+  UPDATE_RAW_MATERIAL: 'UPDATE_RAW_MATERIAL',
 } as const;
 
 export enum OrderStatus {
