@@ -10,7 +10,7 @@
   <a href="https://github.com/airizf11/cotebek/actions" target="_blank"><img src="https://img.shields.io/github/actions/workflow/status/airizf11/cotebek/ci.yml?branch=main&logo=github" alt="CI Status" /></a>
 </p>
 
-> **CoTEBek** (short for _Coba Tebak_ / "Guess What") is a production-ready, multi-tenant NestJS backend boilerplate for building SaaS applications — laundry, F&B, arisan, retail, services, you name it. Built with **Drizzle ORM**, **PostgreSQL**, **JWT + API Key dual auth**, and **comprehensive audit logging**.
+> **CoTEBek** (short for _Core Transaction Engine Backend_) is a production-ready, multi-tenant NestJS backend boilerplate for building SaaS applications — laundry, F&B, arisan, retail, services, you name it. Built with **Drizzle ORM**, **PostgreSQL**, **JWT + API Key dual auth**, and **comprehensive audit logging**.
 
 ---
 
